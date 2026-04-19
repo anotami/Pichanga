@@ -16,6 +16,8 @@ model Usuario {
   tipo            String   // "JUGADOR" | "ORGANIZADOR" | "CLUB"
   codigoReferido  String   @unique @default(cuid())
   referidoPorId   String?
+  baneoHasta      DateTime?
+  totalStrikes    Int      @default(0)
   createdAt       DateTime @default(now())
 
   perfil           JugadorPerfil?
@@ -25,24 +27,36 @@ model Usuario {
   resenasRecibidas Resena[]        @relation("jugador")
   resenasEscritas  Resena[]        @relation("autor")
   transacciones    Transaccion[]
+  strikesRecibidos Strike[]        @relation("jugadorStrike")
+  strikesReportados Strike[]       @relation("reportadorStrike")
+  mensajesEnviados Mensaje[]
+  wallet           Wallet?
 }
 
 model JugadorPerfil {
-  id            String   @id @default(cuid())
-  usuarioId     String   @unique
-  usuario       Usuario  @relation(fields: [usuarioId], references: [id])
-  posicion      String   // "ARQUERO" | "DEFENSA" | "MEDIOCAMPISTA" | "DELANTERO"
-  distrito      String
-  descripcion   String?
-  precio        Float
-  puntos        Int      @default(0)
-  rating        Float    @default(0)
-  totalResenas  Int      @default(0)
-  totalPartidos Int      @default(0)
-  foto          String?
-  disponibilidad String  @default("[]") // JSON: [{dia:"LUNES",inicio:"08:00",fin:"22:00"}]
-  verificado    Boolean  @default(false)
-  createdAt     DateTime @default(now())
+  id                 String   @id @default(cuid())
+  usuarioId          String   @unique
+  usuario            Usuario  @relation(fields: [usuarioId], references: [id])
+  posicion           String   // "ARQUERO" | "DEFENSA" | "MEDIOCAMPISTA" | "DELANTERO"
+  posicionSecundaria String?
+  nivel              String   @default("AMATEUR") // "AMATEUR" | "INTERMEDIO" | "COMPETITIVO"
+  piernaHabil        String   @default("DERECHA") // "DERECHA" | "IZQUIERDA" | "AMBAS"
+  edad               Int?
+  altura             Int?     // en cm
+  distrito           String
+  descripcion        String?
+  precio             Float
+  puntos             Int      @default(0)
+  rating             Float    @default(0)
+  ratingPuntualidad  Float    @default(0)
+  ratingNivel        Float    @default(0)
+  ratingActitud      Float    @default(0)
+  totalResenas       Int      @default(0)
+  totalPartidos      Int      @default(0)
+  foto               String?
+  disponibilidad     String   @default("[]")
+  verificado         Boolean  @default(false)
+  createdAt          DateTime @default(now())
 }
 
 model Club {
@@ -58,25 +72,33 @@ model Club {
 }
 
 model Partido {
-  id             String      @id @default(cuid())
+  id             String    @id @default(cuid())
   organizadorId  String
-  organizador    Usuario     @relation(fields: [organizadorId], references: [id])
+  organizador    Usuario   @relation(fields: [organizadorId], references: [id])
   clubId         String?
-  club           Club?       @relation(fields: [clubId], references: [id])
+  club           Club?     @relation(fields: [clubId], references: [id])
   titulo         String
   descripcion    String?
   distrito       String
   direccion      String?
   fecha          DateTime
-  duracion       Int         // minutos
-  modalidad      String      // "5VS5" | "7VS7" | "11VS11"
-  posiciones     String      // JSON: [{posicion:"ARQUERO",cantidad:1}]
+  duracion       Int
+  modalidad      String
+  posiciones     String
+  nivelRequerido String    @default("AMATEUR") // nivel mínimo requerido
+  cuotaCosto     Float?    // costo de la cuota que paga el jugador
+  pagoJugador    Float?    // cuánto recibe el jugador (arqueros)
   presupuestoMax Float?
-  status         String      @default("ABIERTO") // "ABIERTO" | "EN_CURSO" | "COMPLETADO" | "CANCELADO"
-  createdAt      DateTime    @default(now())
+  destacado      Boolean   @default(false)
+  status         String    @default("ABIERTO")
+  completado     Boolean   @default(false)
+  createdAt      DateTime  @default(now())
 
-  solicitudes   Solicitud[]
-  transacciones Transaccion[]
+  solicitudes      Solicitud[]
+  transacciones    Transaccion[]
+  strikes          Strike[]
+  mensajes         Mensaje[]
+  alertaDestacada  AlertaDestacada?
 }
 
 model Solicitud {
@@ -88,22 +110,51 @@ model Solicitud {
   posicion  String
   precio    Float
   mensaje   String?
-  status    String   @default("PENDIENTE") // "PENDIENTE" | "ACEPTADO" | "RECHAZADO"
+  status    String   @default("PENDIENTE")
+  asistio   Boolean? // null=pendiente, true=asistió, false=no-show
   createdAt DateTime @default(now())
 
   @@unique([partidoId, jugadorId])
 }
 
 model Resena {
-  id         String   @id @default(cuid())
-  jugadorId  String
-  jugador    Usuario  @relation("jugador", fields: [jugadorId], references: [id])
-  autorId    String
-  autor      Usuario  @relation("autor", fields: [autorId], references: [id])
-  partidoId  String?
-  rating     Int      // 1-5
-  comentario String?
-  createdAt  DateTime @default(now())
+  id               String   @id @default(cuid())
+  jugadorId        String
+  jugador          Usuario  @relation("jugador", fields: [jugadorId], references: [id])
+  autorId          String
+  autor            Usuario  @relation("autor", fields: [autorId], references: [id])
+  partidoId        String?
+  rating           Int
+  ratingPuntualidad Int     @default(5)
+  ratingNivel      Int      @default(5)
+  ratingActitud    Int      @default(5)
+  comentario       String?
+  createdAt        DateTime @default(now())
+}
+
+model Strike {
+  id             String   @id @default(cuid())
+  jugadorId      String
+  jugador        Usuario  @relation("jugadorStrike", fields: [jugadorId], references: [id])
+  reportadoPorId String
+  reportadoPor   Usuario  @relation("reportadorStrike", fields: [reportadoPorId], references: [id])
+  partidoId      String
+  partido        Partido  @relation(fields: [partidoId], references: [id])
+  tipo           String   // "NO_SHOW" | "MAL_COMPORTAMIENTO"
+  descripcion    String?
+  baneoAplicado  Int      @default(0) // días de baneo aplicados
+  createdAt      DateTime @default(now())
+}
+
+model Mensaje {
+  id        String   @id @default(cuid())
+  partidoId String
+  partido   Partido  @relation(fields: [partidoId], references: [id])
+  autorId   String
+  autor     Usuario  @relation(fields: [autorId], references: [id])
+  texto     String
+  leido     Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model Transaccion {
@@ -115,6 +166,24 @@ model Transaccion {
   monto     Float
   comision  Float
   neto      Float
-  status    String   @default("PENDIENTE") // "PENDIENTE" | "PAGADO"
+  tipo      String   @default("PARTIDO") // "PARTIDO" | "DESTACADO" | "PREMIUM"
+  status    String   @default("PENDIENTE")
+  createdAt DateTime @default(now())
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  usuarioId String   @unique
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  saldo     Float    @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model AlertaDestacada {
+  id        String   @id @default(cuid())
+  partidoId String   @unique
+  partido   Partido  @relation(fields: [partidoId], references: [id])
+  monto     Float    @default(5)
+  pagado    Boolean  @default(false)
   createdAt DateTime @default(now())
 }

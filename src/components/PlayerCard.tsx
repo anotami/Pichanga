@@ -1,36 +1,43 @@
 import Link from 'next/link'
 import { JugadorPerfil } from '@/types'
-import { getPosicion, formatPrecio, getRango } from '@/lib/constants'
+import { getPosicion, getNivel, formatPrecio, getRango } from '@/lib/constants'
 
 interface Props { perfil: JugadorPerfil; showActions?: boolean }
 
 export default function PlayerCard({ perfil, showActions = true }: Props) {
   const pos = getPosicion(perfil.posicion)
+  const niv = getNivel((perfil as unknown as { nivel: string }).nivel ?? 'AMATEUR')
   const rango = getRango(perfil.puntos)
+  const esBaneado = (perfil as unknown as { usuario?: { baneoHasta?: string } }).usuario?.baneoHasta
+    && new Date((perfil as unknown as { usuario: { baneoHasta: string } }).usuario.baneoHasta) > new Date()
+
+  if (esBaneado) return null
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition overflow-hidden">
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 px-6 pt-6 pb-4 text-center">
+      <div className="bg-gradient-to-br from-gray-50 to-gray-100 px-6 pt-6 pb-4 text-center relative">
+        {(perfil as unknown as { destacado?: boolean }).destacado && (
+          <div className="absolute top-2 right-2 bg-amber-400 text-white text-xs font-bold px-2 py-0.5 rounded-full">⭐ Destacado</div>
+        )}
         <div className="w-16 h-16 rounded-full bg-white shadow flex items-center justify-center text-3xl mx-auto mb-3">
           {pos?.emoji ?? '⚽'}
         </div>
         <h3 className="font-bold text-gray-900 text-lg leading-tight">{perfil.usuario?.nombre ?? 'Jugador'}</h3>
         {perfil.verificado && (
-          <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium mt-1">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-            Verificado
-          </span>
+          <span className="inline-flex items-center gap-1 text-xs text-blue-600 font-medium mt-1">✓ Verificado</span>
         )}
       </div>
 
       <div className="px-6 py-4 space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-1">
           <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${pos?.bg} ${pos?.text} ${pos?.border}`}>
             {pos?.emoji} {pos?.label}
           </span>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${rango.bg} ${rango.color}`}>
-            {rango.nombre}
-          </span>
+          {niv && (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+              {niv.emoji} {niv.label}
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1 text-gray-500 text-sm">
@@ -49,7 +56,7 @@ export default function PlayerCard({ perfil, showActions = true }: Props) {
             ))}
             <span className="text-sm text-gray-500 ml-1">({perfil.totalResenas})</span>
           </div>
-          <span className="text-xs text-amber-600 font-semibold">{perfil.puntos} pts</span>
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${rango.bg} ${rango.color}`}>{rango.nombre}</span>
         </div>
 
         <div className="flex items-center justify-between pt-1">

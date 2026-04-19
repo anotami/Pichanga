@@ -9,17 +9,24 @@ export async function PUT(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
 
   const body = await request.json()
-  const { posicion, distrito, descripcion, precio, disponibilidad, foto } = body
+  const { posicion, posicionSecundaria, nivel, piernaHabil, edad, altura, distrito, descripcion, precio, disponibilidad, foto } = body
 
   const perfil = await prisma.jugadorPerfil.upsert({
     where: { usuarioId: payload.userId },
     create: {
       usuarioId: payload.userId,
-      posicion, distrito, descripcion, precio: parseFloat(precio),
+      posicion, posicionSecundaria, nivel: nivel ?? 'AMATEUR',
+      piernaHabil: piernaHabil ?? 'DERECHA',
+      edad: edad ? parseInt(edad) : null,
+      altura: altura ? parseInt(altura) : null,
+      distrito, descripcion, precio: parseFloat(precio),
       foto, disponibilidad: JSON.stringify(disponibilidad ?? [])
     },
     update: {
-      posicion, distrito, descripcion, precio: parseFloat(precio),
+      posicion, posicionSecundaria, nivel,
+      piernaHabil, edad: edad ? parseInt(edad) : null,
+      altura: altura ? parseInt(altura) : null,
+      distrito, descripcion, precio: parseFloat(precio),
       foto, disponibilidad: JSON.stringify(disponibilidad ?? [])
     }
   })
@@ -34,7 +41,7 @@ export async function POST(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
 
   const body = await request.json()
-  const { nombre, distrito, descripcion, telefono } = body
+  const { nombre, distrito, descripcion, telefono, nombreClub } = body
 
   const usuario = await prisma.usuario.update({
     where: { id: payload.userId },
@@ -44,8 +51,8 @@ export async function POST(request: Request) {
   if (usuario.tipo === 'CLUB') {
     await prisma.club.upsert({
       where: { usuarioId: payload.userId },
-      create: { usuarioId: payload.userId, nombre: body.nombreClub || nombre, distrito, descripcion, telefono },
-      update: { nombre: body.nombreClub || nombre, distrito, descripcion, telefono }
+      create: { usuarioId: payload.userId, nombre: nombreClub || nombre, distrito, descripcion, telefono },
+      update: { nombre: nombreClub || nombre, distrito, descripcion, telefono }
     })
   }
 

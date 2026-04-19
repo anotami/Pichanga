@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   const payload = verifyToken(token)
   if (!payload) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
 
-  const { jugadorId, rating, comentario, partidoId } = await request.json()
+  const { jugadorId, rating, ratingPuntualidad, ratingNivel, ratingActitud, comentario, partidoId } = await request.json()
 
   if (!jugadorId || !rating || rating < 1 || rating > 5) {
     return NextResponse.json({ error: 'Datos de reseña inválidos' }, { status: 400 })
@@ -19,18 +19,30 @@ export async function POST(request: Request) {
   }
 
   const resena = await prisma.resena.create({
-    data: { jugadorId, autorId: payload.userId, rating: parseInt(rating), comentario, partidoId },
+    data: {
+      jugadorId, autorId: payload.userId,
+      rating: parseInt(rating),
+      ratingPuntualidad: parseInt(ratingPuntualidad ?? rating),
+      ratingNivel: parseInt(ratingNivel ?? rating),
+      ratingActitud: parseInt(ratingActitud ?? rating),
+      comentario, partidoId
+    },
     include: { autor: { select: { id: true, nombre: true } } }
   })
 
   const todasResenas = await prisma.resena.findMany({ where: { jugadorId } })
-  const nuevoRating = todasResenas.reduce((sum, r) => sum + r.rating, 0) / todasResenas.length
+  const avg = (field: 'rating' | 'ratingPuntualidad' | 'ratingNivel' | 'ratingActitud') =>
+    Math.round((todasResenas.reduce((s, r) => s + r[field], 0) / todasResenas.length) * 10) / 10
+
   const puntosGanados = PUNTOS_POR_RATING[rating as keyof typeof PUNTOS_POR_RATING] ?? 0
 
   await prisma.jugadorPerfil.updateMany({
     where: { usuarioId: jugadorId },
     data: {
-      rating: Math.round(nuevoRating * 10) / 10,
+      rating: avg('rating'),
+      ratingPuntualidad: avg('ratingPuntualidad'),
+      ratingNivel: avg('ratingNivel'),
+      ratingActitud: avg('ratingActitud'),
       totalResenas: todasResenas.length,
       puntos: { increment: puntosGanados }
     }

@@ -1,13 +1,18 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { POSICIONES, DISTRITOS, DIAS_SEMANA } from '@/lib/constants'
+import { POSICIONES, DISTRITOS, DIAS_SEMANA, NIVELES, PIERNAS } from '@/lib/constants'
 import { Usuario } from '@/types'
 
 export default function MiPerfilPage() {
   const router = useRouter()
   const [usuario, setUsuario] = useState<Usuario | null>(null)
-  const [form, setForm] = useState({ posicion: 'DELANTERO', distrito: 'Miraflores', precio: '', descripcion: '', disponibilidad: [] as { dia: string; inicio: string; fin: string }[] })
+  const [form, setForm] = useState({
+    posicion: 'DELANTERO', posicionSecundaria: '', nivel: 'AMATEUR',
+    piernaHabil: 'DERECHA', edad: '', altura: '',
+    distrito: 'Miraflores', precio: '', descripcion: '',
+    disponibilidad: [] as { dia: string; inicio: string; fin: string }[]
+  })
   const [infoForm, setInfoForm] = useState({ nombre: '', telefono: '' })
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState('')
@@ -24,6 +29,11 @@ export default function MiPerfilPage() {
         if (u.perfil) {
           setForm({
             posicion: u.perfil.posicion,
+            posicionSecundaria: u.perfil.posicionSecundaria || '',
+            nivel: u.perfil.nivel || 'AMATEUR',
+            piernaHabil: u.perfil.piernaHabil || 'DERECHA',
+            edad: u.perfil.edad ? String(u.perfil.edad) : '',
+            altura: u.perfil.altura ? String(u.perfil.altura) : '',
             distrito: u.perfil.distrito,
             precio: String(u.perfil.precio),
             descripcion: u.perfil.descripcion || '',
@@ -51,11 +61,13 @@ export default function MiPerfilPage() {
     setMsg('')
     try {
       const token = localStorage.getItem('token')
-      await fetch('/api/perfil', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...form, precio: parseFloat(form.precio) })
-      })
+      if (usuario?.tipo === 'JUGADOR') {
+        await fetch('/api/perfil', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ ...form, precio: parseFloat(form.precio) })
+        })
+      }
       await fetch('/api/perfil', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -79,7 +91,6 @@ export default function MiPerfilPage() {
 
       {msg && <div className={`rounded-xl px-4 py-3 text-sm mb-4 ${msg.includes('Error') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>{msg}</div>}
 
-      {/* Código de referido */}
       <div className="card mb-5 bg-amber-50 border-amber-200">
         <h3 className="font-semibold text-amber-900 mb-2">🎁 Tu código de referido</h3>
         <div className="flex items-center gap-3">
@@ -116,24 +127,58 @@ export default function MiPerfilPage() {
         {usuario.tipo === 'JUGADOR' && (
           <>
             <div className="card space-y-4">
-              <h2 className="font-semibold text-gray-900">Perfil de jugador</h2>
+              <h2 className="font-semibold text-gray-900">Perfil deportivo</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label">Posición</label>
+                  <label className="label">Posición principal</label>
                   <select className="input" value={form.posicion} onChange={e => setForm(f => ({ ...f, posicion: e.target.value }))}>
                     {POSICIONES.map(p => <option key={p.value} value={p.value}>{p.emoji} {p.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="label">Precio por partido (S/)</label>
-                  <input type="number" className="input" min="1" value={form.precio} onChange={e => setForm(f => ({ ...f, precio: e.target.value }))} required />
+                  <label className="label">Posición secundaria</label>
+                  <select className="input" value={form.posicionSecundaria} onChange={e => setForm(f => ({ ...f, posicionSecundaria: e.target.value }))}>
+                    <option value="">Ninguna</option>
+                    {POSICIONES.map(p => <option key={p.value} value={p.value}>{p.emoji} {p.label}</option>)}
+                  </select>
                 </div>
               </div>
-              <div>
-                <label className="label">Distrito</label>
-                <select className="input" value={form.distrito} onChange={e => setForm(f => ({ ...f, distrito: e.target.value }))}>
-                  {DISTRITOS.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Nivel de juego</label>
+                  <select className="input" value={form.nivel} onChange={e => setForm(f => ({ ...f, nivel: e.target.value }))}>
+                    {NIVELES.map(n => <option key={n.value} value={n.value}>{n.emoji} {n.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Pierna hábil</label>
+                  <select className="input" value={form.piernaHabil} onChange={e => setForm(f => ({ ...f, piernaHabil: e.target.value }))}>
+                    {PIERNAS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Edad (años)</label>
+                  <input type="number" className="input" placeholder="25" min="14" max="65" value={form.edad} onChange={e => setForm(f => ({ ...f, edad: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="label">Altura (cm)</label>
+                  <input type="number" className="input" placeholder="175" min="140" max="220" value={form.altura} onChange={e => setForm(f => ({ ...f, altura: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Precio por partido (S/)</label>
+                  <input type="number" className="input" min="0" value={form.precio} onChange={e => setForm(f => ({ ...f, precio: e.target.value }))} required />
+                  <p className="text-xs text-gray-400 mt-1">Pon 0 si juegas gratis (ej. arqueros)</p>
+                </div>
+                <div>
+                  <label className="label">Distrito</label>
+                  <select className="input" value={form.distrito} onChange={e => setForm(f => ({ ...f, distrito: e.target.value }))}>
+                    {DISTRITOS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="label">Descripción</label>
