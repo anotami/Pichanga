@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  password        String
+  nombre          String
+  telefono        String?
+  tipo            String   // "JUGADOR" | "ORGANIZADOR" | "CLUB"
+  codigoReferido  String   @unique @default(cuid())
+  referidoPorId   String?
+  createdAt       DateTime @default(now())
+
+  perfil           JugadorPerfil?
+  club             Club?
+  partidosOrg      Partido[]
+  solicitudes      Solicitud[]
+  resenasRecibidas Resena[]        @relation("jugador")
+  resenasEscritas  Resena[]        @relation("autor")
+  transacciones    Transaccion[]
+}
+
+model JugadorPerfil {
+  id            String   @id @default(cuid())
+  usuarioId     String   @unique
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id])
+  posicion      String   // "ARQUERO" | "DEFENSA" | "MEDIOCAMPISTA" | "DELANTERO"
+  distrito      String
+  descripcion   String?
+  precio        Float
+  puntos        Int      @default(0)
+  rating        Float    @default(0)
+  totalResenas  Int      @default(0)
+  totalPartidos Int      @default(0)
+  foto          String?
+  disponibilidad String  @default("[]") // JSON: [{dia:"LUNES",inicio:"08:00",fin:"22:00"}]
+  verificado    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
+
+model Club {
+  id          String    @id @default(cuid())
+  usuarioId   String    @unique
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id])
+  nombre      String
+  distrito    String
+  descripcion String?
+  telefono    String?
+  partidos    Partido[]
+  createdAt   DateTime  @default(now())
+}
+
+model Partido {
+  id             String      @id @default(cuid())
+  organizadorId  String
+  organizador    Usuario     @relation(fields: [organizadorId], references: [id])
+  clubId         String?
+  club           Club?       @relation(fields: [clubId], references: [id])
+  titulo         String
+  descripcion    String?
+  distrito       String
+  direccion      String?
+  fecha          DateTime
+  duracion       Int         // minutos
+  modalidad      String      // "5VS5" | "7VS7" | "11VS11"
+  posiciones     String      // JSON: [{posicion:"ARQUERO",cantidad:1}]
+  presupuestoMax Float?
+  status         String      @default("ABIERTO") // "ABIERTO" | "EN_CURSO" | "COMPLETADO" | "CANCELADO"
+  createdAt      DateTime    @default(now())
+
+  solicitudes   Solicitud[]
+  transacciones Transaccion[]
+}
+
+model Solicitud {
+  id        String   @id @default(cuid())
+  partidoId String
+  partido   Partido  @relation(fields: [partidoId], references: [id])
+  jugadorId String
+  jugador   Usuario  @relation(fields: [jugadorId], references: [id])
+  posicion  String
+  precio    Float
+  mensaje   String?
+  status    String   @default("PENDIENTE") // "PENDIENTE" | "ACEPTADO" | "RECHAZADO"
+  createdAt DateTime @default(now())
+
+  @@unique([partidoId, jugadorId])
+}
+
+model Resena {
+  id         String   @id @default(cuid())
+  jugadorId  String
+  jugador    Usuario  @relation("jugador", fields: [jugadorId], references: [id])
+  autorId    String
+  autor      Usuario  @relation("autor", fields: [autorId], references: [id])
+  partidoId  String?
+  rating     Int      // 1-5
+  comentario String?
+  createdAt  DateTime @default(now())
+}
+
+model Transaccion {
+  id        String   @id @default(cuid())
+  jugadorId String
+  jugador   Usuario  @relation(fields: [jugadorId], references: [id])
+  partidoId String
+  partido   Partido  @relation(fields: [partidoId], references: [id])
+  monto     Float
+  comision  Float
+  neto      Float
+  status    String   @default("PENDIENTE") // "PENDIENTE" | "PAGADO"
+  createdAt DateTime @default(now())
+}
