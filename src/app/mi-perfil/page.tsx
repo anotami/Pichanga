@@ -10,7 +10,7 @@ export default function MiPerfilPage() {
   const [form, setForm] = useState({
     posicion: 'DELANTERO', posicionSecundaria: '', nivel: 'AMATEUR',
     piernaHabil: 'DERECHA', edad: '', altura: '',
-    distrito: 'Miraflores', precio: '', descripcion: '',
+    distrito: 'Miraflores', precio: '', descripcion: '', radioAccion: '10',
     disponibilidad: [] as { dia: string; inicio: string; fin: string }[]
   })
   const [infoForm, setInfoForm] = useState({ nombre: '', telefono: '' })
@@ -37,6 +37,7 @@ export default function MiPerfilPage() {
             distrito: u.perfil.distrito,
             precio: String(u.perfil.precio),
             descripcion: u.perfil.descripcion || '',
+            radioAccion: String((u.perfil as unknown as { radioAccion?: number }).radioAccion ?? 10),
             disponibilidad: u.perfil.disponibilidad || []
           })
         }
@@ -171,14 +172,23 @@ export default function MiPerfilPage() {
                 <div>
                   <label className="label">Precio por partido (S/)</label>
                   <input type="number" className="input" min="0" value={form.precio} onChange={e => setForm(f => ({ ...f, precio: e.target.value }))} required />
-                  <p className="text-xs text-gray-400 mt-1">Pon 0 si juegas gratis (ej. arqueros)</p>
+                  <p className="text-xs text-gray-400 mt-1">Pon 0 si juegas gratis</p>
                 </div>
                 <div>
-                  <label className="label">Distrito</label>
+                  <label className="label">Distrito base</label>
                   <select className="input" value={form.distrito} onChange={e => setForm(f => ({ ...f, distrito: e.target.value }))}>
                     {DISTRITOS.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </div>
+              </div>
+              <div>
+                <label className="label">Radio de acción: {form.radioAccion} km</label>
+                <input type="range" min="2" max="30" step="2" className="w-full accent-red-600"
+                  value={form.radioAccion} onChange={e => setForm(f => ({ ...f, radioAccion: e.target.value }))} />
+                <div className="flex justify-between text-xs text-gray-400 mt-0.5">
+                  <span>2 km (muy cerca)</span><span>15 km</span><span>30 km (toda Lima)</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Solo verás partidos dentro de este radio desde tu distrito</p>
               </div>
               <div>
                 <label className="label">Descripción</label>

@@ -53,6 +53,13 @@ export async function POST(request: Request, { params }: { params: { partidoId: 
     return NextResponse.json({ error: 'No puedes enviar mensajes en este partido' }, { status: 403 })
   }
 
+  // Chat expires 24h after match
+  const chatExpirado = partido.status === 'COMPLETADO' &&
+    (new Date().getTime() - new Date(partido.fecha).getTime()) > 24 * 60 * 60 * 1000
+  if (chatExpirado) {
+    return NextResponse.json({ error: 'El chat cerró 24 horas después del partido' }, { status: 403 })
+  }
+
   const autor = await prisma.usuario.findUnique({ where: { id: payload.userId }, select: { nombre: true } })
 
   const mensaje = await prisma.mensaje.create({

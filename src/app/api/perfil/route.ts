@@ -21,7 +21,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ data: club })
   }
 
-  const { posicion, posicionSecundaria, nivel, piernaHabil, edad, altura, distrito, descripcion, precio, disponibilidad, foto } = body
+  const { posicion, posicionSecundaria, nivel, piernaHabil, edad, altura, distrito, descripcion, precio, disponibilidad, foto, radioAccion } = body
 
   const perfil = await prisma.jugadorPerfil.upsert({
     where: { usuarioId: payload.userId },
@@ -32,14 +32,16 @@ export async function PUT(request: Request) {
       edad: edad ? parseInt(edad) : null,
       altura: altura ? parseInt(altura) : null,
       distrito, descripcion, precio: parseFloat(precio),
-      foto, disponibilidad: JSON.stringify(disponibilidad ?? [])
+      foto, disponibilidad: JSON.stringify(disponibilidad ?? []),
+      radioAccion: radioAccion ? parseInt(radioAccion) : 10,
     },
     update: {
       posicion, posicionSecundaria, nivel,
       piernaHabil, edad: edad ? parseInt(edad) : null,
       altura: altura ? parseInt(altura) : null,
       distrito, descripcion, precio: parseFloat(precio),
-      foto, disponibilidad: JSON.stringify(disponibilidad ?? [])
+      foto, disponibilidad: JSON.stringify(disponibilidad ?? []),
+      radioAccion: radioAccion ? parseInt(radioAccion) : undefined,
     }
   })
 

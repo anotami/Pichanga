@@ -5,7 +5,12 @@ import { Partido, Solicitud } from '@/types'
 import { getPosicion, formatPrecio, formatFecha, formatHora, POSICIONES, COMISION_PLATAFORMA, PRECIO_DESTACADO } from '@/lib/constants'
 
 interface Mensaje { id: string; texto: string; createdAt: string; autor: { id: string; nombre: string } }
-interface PartidoDetalle extends Partido { solicitudes: Solicitud[] }
+interface PartidoDetalle extends Partido {
+  solicitudes: Solicitud[]
+  tipoPago?: string
+  cuotaCosto?: number
+  pagoJugador?: number
+}
 
 export default function PartidoDetallePage() {
   const { id } = useParams<{ id: string }>()
@@ -17,6 +22,8 @@ export default function PartidoDetallePage() {
   const [aplicando, setAplicando] = useState(false)
   const [msg, setMsg] = useState('')
   const [tab, setTab] = useState<'info' | 'chat' | 'solicitudes'>('info')
+  const [resenaPartido, setResenaPartido] = useState({ rating: 5, ratingOrg: 5, ratingCuota: 5, ratingAmbiente: 5, comentario: '' })
+  const [resenaEnviada, setResenaEnviada] = useState(false)
   const [mensajes, setMensajes] = useState<Mensaje[]>([])
   const [nuevoMensaje, setNuevoMensaje] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -133,6 +140,18 @@ export default function PartidoDetallePage() {
     setEnviando(false)
   }
 
+  async function handleResenaPartido(e: React.FormEvent) {
+    e.preventDefault()
+    const token = localStorage.getItem('token')
+    const res = await fetch('/api/resenas/partido', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ partidoId: id, ...resenaPartido })
+    })
+    if (res.ok) { setResenaEnviada(true); setMsg('¡Gracias por calificar el partido!') }
+    else { const j = await res.json(); setMsg(j.error) }
+  }
+
   async function handleGuardarAsistencia() {
     setGuardandoAsistencia(true)
     const token = localStorage.getItem('token')
@@ -159,6 +178,17 @@ export default function PartidoDetallePage() {
   const neto = aplicarForm.precio ? parseFloat(aplicarForm.precio) - comision : 0
   const puedeChatear = esMio || (partido.solicitudes?.some(s => s.jugadorId === usuario?.id && s.status === 'ACEPTADO'))
   const aceptadas = partido.solicitudes?.filter(s => s.status === 'ACEPTADO') ?? []
+  const miSolicitudAceptada = miSolicitud?.status === 'ACEPTADO'
+  const chatExpirado = partido.status === 'COMPLETADO' && partido.fecha
+    ? (new Date().getTime() - new Date(partido.fecha).getTime()) > 24 * 60 * 60 * 1000
+    : false
+  const puedeCalificarPartido = partido.status === 'COMPLETADO' && (esMio || miSolicitudAceptada) && !resenaEnviada
+
+  const TIPOPAGO_LABEL: Record<string, { label: string; emoji: string; color: string }> = {
+    PAGA_CUOTA: { label: 'Paga cuota', emoji: '💳', color: 'text-blue-600 bg-blue-50' },
+    GRATIS:     { label: 'Gratis', emoji: '🆓', color: 'text-green-600 bg-green-50' },
+    SE_LE_PAGA: { label: 'Se le paga', emoji: '💰', color: 'text-amber-600 bg-amber-50' },
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
@@ -192,6 +222,23 @@ export default function PartidoDetallePage() {
               <div className="flex items-center gap-2"><span>⚽</span>{partido.modalidad.replace('VS', 'vs ')}</div>
               {partido.direccion && <div className="flex items-center gap-2 col-span-2"><span>🗺️</span>{partido.direccion}</div>}
             </div>
+
+            {partido.tipoPago && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center gap-3 flex-wrap">
+                  {(() => {
+                    const tp = TIPOPAGO_LABEL[partido.tipoPago ?? 'PAGA_CUOTA']
+                    return (
+                      <span className={`inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full ${tp.color}`}>
+                        {tp.emoji} {tp.label}
+                        {partido.cuotaCosto && partido.tipoPago === 'PAGA_CUOTA' && `: ${formatPrecio(partido.cuotaCosto)}`}
+                        {partido.pagoJugador && partido.tipoPago === 'SE_LE_PAGA' && `: ${formatPrecio(partido.pagoJugador)}`}
+                      </span>
+                    )
+                  })()}
+                </div>
+              </div>
+            )}
 
             {esMio && partido.status === 'ABIERTO' && (
               <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
@@ -293,18 +340,23 @@ export default function PartidoDetallePage() {
 
               {tab === 'chat' && puedeChatear && (
                 <div className="card">
+                  {chatExpirado && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 text-sm text-gray-500 text-center">
+                      🔒 El chat cerró 24 horas después del partido
+                    </div>
+                  )}
                   <div ref={chatRef} className="h-64 overflow-y-auto space-y-3 mb-4 pr-1">
                     {mensajes.length === 0 && (
                       <p className="text-gray-400 text-sm text-center pt-10">Sin mensajes aún. ¡Sé el primero!</p>
                     )}
                     {mensajes.map(m => {
-                      const esMio = m.autor.id === usuario?.id
+                      const esMioMsg = m.autor.id === usuario?.id
                       return (
-                        <div key={m.id} className={`flex ${esMio ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-xs rounded-2xl px-4 py-2.5 ${esMio ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-900'}`}>
-                            {!esMio && <p className="text-xs font-semibold mb-0.5 opacity-70">{m.autor.nombre}</p>}
+                        <div key={m.id} className={`flex ${esMioMsg ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-xs rounded-2xl px-4 py-2.5 ${esMioMsg ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-900'}`}>
+                            {!esMioMsg && <p className="text-xs font-semibold mb-0.5 opacity-70">{m.autor.nombre}</p>}
                             <p className="text-sm">{m.texto}</p>
-                            <p className={`text-xs mt-1 ${esMio ? 'text-red-200' : 'text-gray-400'}`}>
+                            <p className={`text-xs mt-1 ${esMioMsg ? 'text-red-200' : 'text-gray-400'}`}>
                               {new Date(m.createdAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
@@ -312,19 +364,21 @@ export default function PartidoDetallePage() {
                       )
                     })}
                   </div>
-                  <form onSubmit={handleEnviarMensaje} className="flex gap-2">
-                    <input
-                      className="input flex-1"
-                      placeholder="Escribe un mensaje..."
-                      value={nuevoMensaje}
-                      onChange={e => setNuevoMensaje(e.target.value)}
-                      disabled={enviando}
-                    />
-                    <button type="submit" disabled={enviando || !nuevoMensaje.trim()}
-                      className="bg-red-600 text-white px-4 py-2 rounded-xl font-semibold hover:bg-red-700 transition disabled:opacity-40">
-                      Enviar
-                    </button>
-                  </form>
+                  {!chatExpirado && (
+                    <form onSubmit={handleEnviarMensaje} className="flex gap-2">
+                      <input
+                        className="input flex-1"
+                        placeholder="Escribe un mensaje..."
+                        value={nuevoMensaje}
+                        onChange={e => setNuevoMensaje(e.target.value)}
+                        disabled={enviando}
+                      />
+                      <button type="submit" disabled={enviando || !nuevoMensaje.trim()}
+                        className="bg-red-600 text-white px-4 py-2 rounded-xl font-semibold hover:bg-red-700 transition disabled:opacity-40">
+                        Enviar
+                      </button>
+                    </form>
+                  )}
                 </div>
               )}
             </div>
@@ -405,6 +459,39 @@ export default function PartidoDetallePage() {
             <div className="card text-center">
               <p className="text-sm text-gray-600 mb-3">Inicia sesión como jugador para aplicar</p>
               <button onClick={() => router.push('/login')} className="btn-primary w-full">Ingresar</button>
+            </div>
+          )}
+
+          {/* Calificar el partido */}
+          {puedeCalificarPartido && (
+            <div className="card">
+              <h3 className="font-semibold text-gray-900 mb-3">⭐ Califica este partido</h3>
+              <form onSubmit={handleResenaPartido} className="space-y-3">
+                {[
+                  { key: 'rating', label: 'Puntuación general' },
+                  { key: 'ratingOrg', label: 'Organización' },
+                  { key: 'ratingCuota', label: 'Veracidad del pago' },
+                  { key: 'ratingAmbiente', label: 'Ambiente' },
+                ].map(({ key, label }) => (
+                  <div key={key}>
+                    <label className="label text-xs">{label}</label>
+                    <div className="flex gap-1">
+                      {[1,2,3,4,5].map(n => (
+                        <button key={n} type="button"
+                          onClick={() => setResenaPartido(r => ({ ...r, [key]: n }))}
+                          className={`text-2xl transition ${(resenaPartido as unknown as Record<string, number>)[key] >= n ? 'text-amber-400' : 'text-gray-200'}`}>
+                          ★
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <div>
+                  <label className="label text-xs">Comentario (opcional)</label>
+                  <textarea className="input text-sm" rows={2} value={resenaPartido.comentario} onChange={e => setResenaPartido(r => ({ ...r, comentario: e.target.value }))} />
+                </div>
+                <button type="submit" className="btn-primary w-full text-sm">Enviar calificación</button>
+              </form>
             </div>
           )}
 

@@ -1,9 +1,15 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { POSICIONES, DISTRITOS, MODALIDADES, NIVELES } from '@/lib/constants'
+import { POSICIONES, DISTRITOS, MODALIDADES, NIVELES, formatPrecio } from '@/lib/constants'
 
 interface PosicionRow { posicion: string; cantidad: number }
+
+const TIPOS_PAGO = [
+  { value: 'PAGA_CUOTA', label: 'Paga su cuota', desc: 'El jugador paga para participar', emoji: '💳' },
+  { value: 'GRATIS', label: 'Juega gratis', desc: 'El jugador no paga ni cobra nada', emoji: '🆓' },
+  { value: 'SE_LE_PAGA', label: 'Se le paga', desc: 'El jugador recibe un pago por jugar', emoji: '💰' },
+]
 
 export default function CrearPartidoPage() {
   const router = useRouter()
@@ -11,7 +17,9 @@ export default function CrearPartidoPage() {
   const [error, setError] = useState('')
   const [form, setForm] = useState({
     titulo: '', descripcion: '', distrito: 'Miraflores', direccion: '',
-    fecha: '', hora: '10:00', duracion: '90', modalidad: '5VS5', presupuestoMax: '', nivelRequerido: 'AMATEUR'
+    fecha: '', hora: '10:00', duracion: '90', modalidad: '5VS5',
+    presupuestoMax: '', nivelRequerido: 'AMATEUR',
+    tipoPago: 'PAGA_CUOTA', cuotaCosto: '', pagoJugador: ''
   })
   const [posiciones, setPosiciones] = useState<PosicionRow[]>([{ posicion: 'ARQUERO', cantidad: 1 }])
 
@@ -21,12 +29,8 @@ export default function CrearPartidoPage() {
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
-  function addPosicion() {
-    setPosiciones(p => [...p, { posicion: 'DELANTERO', cantidad: 1 }])
-  }
-  function removePosicion(i: number) {
-    setPosiciones(p => p.filter((_, idx) => idx !== i))
-  }
+  function addPosicion() { setPosiciones(p => [...p, { posicion: 'DELANTERO', cantidad: 1 }]) }
+  function removePosicion(i: number) { setPosiciones(p => p.filter((_, idx) => idx !== i)) }
   function updatePosicion(i: number, k: keyof PosicionRow, v: string | number) {
     setPosiciones(p => p.map((row, idx) => idx === i ? { ...row, [k]: v } : row))
   }
@@ -49,6 +53,9 @@ export default function CrearPartidoPage() {
           duracion: parseInt(form.duracion),
           modalidad: form.modalidad,
           nivelRequerido: form.nivelRequerido,
+          tipoPago: form.tipoPago,
+          cuotaCosto: form.cuotaCosto ? parseFloat(form.cuotaCosto) : null,
+          pagoJugador: form.pagoJugador ? parseFloat(form.pagoJugador) : null,
           posiciones,
           presupuestoMax: form.presupuestoMax ? parseFloat(form.presupuestoMax) : null
         })
@@ -129,6 +136,39 @@ export default function CrearPartidoPage() {
         </div>
 
         <div className="card space-y-4">
+          <h2 className="font-semibold text-gray-900">Condiciones económicas</h2>
+          <div className="grid grid-cols-3 gap-3">
+            {TIPOS_PAGO.map(t => (
+              <button key={t.value} type="button" onClick={() => set('tipoPago', t.value)}
+                className={`p-3 rounded-xl border-2 text-center transition ${form.tipoPago === t.value ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                <div className="text-2xl mb-1">{t.emoji}</div>
+                <p className={`text-xs font-semibold ${form.tipoPago === t.value ? 'text-red-700' : 'text-gray-700'}`}>{t.label}</p>
+                <p className="text-xs text-gray-400 mt-0.5 leading-tight">{t.desc}</p>
+              </button>
+            ))}
+          </div>
+
+          {form.tipoPago === 'PAGA_CUOTA' && (
+            <div>
+              <label className="label">Monto de la cuota (S/)</label>
+              <input type="number" className="input" placeholder="15" min="0" value={form.cuotaCosto} onChange={e => set('cuotaCosto', e.target.value)} />
+              <p className="text-xs text-gray-400 mt-1">Lo que paga cada jugador para participar</p>
+            </div>
+          )}
+          {form.tipoPago === 'SE_LE_PAGA' && (
+            <div>
+              <label className="label">Pago al jugador (S/)</label>
+              <input type="number" className="input" placeholder="50" min="0" value={form.pagoJugador} onChange={e => set('pagoJugador', e.target.value)} />
+              <p className="text-xs text-gray-400 mt-1">
+                Recibes: <span className="text-green-600 font-semibold">
+                  {form.pagoJugador ? formatPrecio(parseFloat(form.pagoJugador) * 0.9) : 'S/ --'}
+                </span> (luego de 10% de comisión)
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="card space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-gray-900">Jugadores necesarios</h2>
             <button type="button" onClick={addPosicion} className="text-sm text-red-600 font-medium hover:text-red-700">+ Agregar posición</button>
@@ -147,7 +187,7 @@ export default function CrearPartidoPage() {
             </div>
           ))}
           <div>
-            <label className="label">Presupuesto máximo por jugador (S/)</label>
+            <label className="label">Presupuesto máximo por jugador (S/) — opcional</label>
             <input type="number" className="input" placeholder="Sin límite" min="0" value={form.presupuestoMax} onChange={e => set('presupuestoMax', e.target.value)} />
             <p className="text-xs text-gray-400 mt-1">La plataforma retiene el 10% de comisión</p>
           </div>
