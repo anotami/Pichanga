@@ -51,6 +51,7 @@ export default function Navbar() {
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl py-1 border border-gray-100">
                       <Link href="/mi-perfil" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setMenuAbierto(false)}>Mi perfil</Link>
                       <Link href="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setMenuAbierto(false)}>Dashboard</Link>
+                      <Link href="/wallet" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setMenuAbierto(false)}>💰 Mi billetera</Link>
                       <hr className="my-1" />
                       <button onClick={cerrarSesion} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Cerrar sesión</button>
                     </div>
@@ -81,6 +82,7 @@ export default function Navbar() {
             <>
               <Link href="/dashboard" className="block text-red-100 py-2" onClick={() => setMenuAbierto(false)}>Dashboard</Link>
               <Link href="/mi-perfil" className="block text-red-100 py-2" onClick={() => setMenuAbierto(false)}>Mi perfil</Link>
+              <Link href="/wallet" className="block text-red-100 py-2" onClick={() => setMenuAbierto(false)}>💰 Mi billetera</Link>
               <button onClick={cerrarSesion} className="block text-red-200 py-2">Cerrar sesión</button>
             </>
           ) : (
