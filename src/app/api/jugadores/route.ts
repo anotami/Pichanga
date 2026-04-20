@@ -9,11 +9,14 @@ export async function GET(request: Request) {
   const nivel = searchParams.get('nivel')
   const busqueda = searchParams.get('q')
 
+  const verificado = searchParams.get('verificado')
+
   const where: Record<string, unknown> = {}
   if (posicion) where.posicion = posicion
   if (distrito) where.distrito = { contains: distrito }
   if (precioMax) where.precio = { lte: parseFloat(precioMax) }
   if (nivel) where.nivel = nivel
+  if (verificado === 'true') where.verificado = true
 
   const perfiles = await prisma.jugadorPerfil.findMany({
     where,

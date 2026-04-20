@@ -14,6 +14,8 @@ function JugadoresContent() {
   const [precioMax, setPrecioMax] = useState('')
   const [nivel, setNivel] = useState(searchParams.get('nivel') ?? '')
   const [busqueda, setBusqueda] = useState('')
+  const [soloVerificados, setSoloVerificados] = useState(false)
+  const [orden, setOrden] = useState('rating')
 
   useEffect(() => {
     setLoading(true)
@@ -23,13 +25,22 @@ function JugadoresContent() {
     if (precioMax) params.set('precioMax', precioMax)
     if (nivel) params.set('nivel', nivel)
     if (busqueda) params.set('q', busqueda)
+    if (soloVerificados) params.set('verificado', 'true')
     fetch(`/api/jugadores?${params}`)
       .then(r => r.json())
       .then(j => setJugadores(j.data ?? []))
       .finally(() => setLoading(false))
-  }, [posicion, distrito, precioMax, nivel, busqueda])
+  }, [posicion, distrito, precioMax, nivel, busqueda, soloVerificados])
 
-  const hayFiltros = posicion || distrito || precioMax || nivel || busqueda
+  const ordenados = [...jugadores].sort((a, b) => {
+    if (orden === 'rating') return (b.rating ?? 0) - (a.rating ?? 0)
+    if (orden === 'precio_asc') return (a.precio ?? 0) - (b.precio ?? 0)
+    if (orden === 'precio_desc') return (b.precio ?? 0) - (a.precio ?? 0)
+    if (orden === 'puntos') return (b.puntos ?? 0) - (a.puntos ?? 0)
+    return 0
+  })
+
+  const hayFiltros = posicion || distrito || precioMax || nivel || busqueda || soloVerificados
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
@@ -66,14 +77,40 @@ function JugadoresContent() {
             </select>
           </div>
         </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+          <div>
+            <label className="label">Precio máximo (S/)</label>
+            <input type="number" className="input" placeholder="Sin límite" min="0" value={precioMax} onChange={e => setPrecioMax(e.target.value)} />
+          </div>
+          <div>
+            <label className="label">Ordenar por</label>
+            <select className="input" value={orden} onChange={e => setOrden(e.target.value)}>
+              <option value="rating">Mayor rating</option>
+              <option value="puntos">Más puntos</option>
+              <option value="precio_asc">Precio: menor a mayor</option>
+              <option value="precio_desc">Precio: mayor a menor</option>
+            </select>
+          </div>
+          <div className="flex items-end pb-1">
+            <label className="flex items-center gap-2 text-gray-600 text-sm cursor-pointer">
+              <input type="checkbox" checked={soloVerificados} onChange={e => setSoloVerificados(e.target.checked)}
+                className="rounded text-red-600" />
+              Solo jugadores verificados ✓
+            </label>
+          </div>
+        </div>
+
         <div className="flex items-center justify-between mt-3">
           <div className="flex gap-2 flex-wrap">
             {posicion && <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">{POSICIONES.find(p=>p.value===posicion)?.label}</span>}
             {nivel && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">{NIVELES.find(n=>n.value===nivel)?.label}</span>}
             {distrito && <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">{distrito}</span>}
+            {precioMax && <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">Hasta S/{precioMax}</span>}
+            {soloVerificados && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">✓ Verificados</span>}
           </div>
           {hayFiltros && (
-            <button onClick={() => { setPosicion(''); setDistrito(''); setPrecioMax(''); setNivel(''); setBusqueda('') }}
+            <button onClick={() => { setPosicion(''); setDistrito(''); setPrecioMax(''); setNivel(''); setBusqueda(''); setSoloVerificados(false) }}
               className="text-sm text-red-600 hover:text-red-700 font-medium">
               Limpiar filtros ×
             </button>
@@ -86,7 +123,7 @@ function JugadoresContent() {
           <div className="text-4xl mb-3 animate-pulse">⚽</div>
           <p>Buscando jugadores...</p>
         </div>
-      ) : jugadores.length === 0 ? (
+      ) : ordenados.length === 0 ? (
         <div className="text-center py-20">
           <div className="text-5xl mb-4">😕</div>
           <h3 className="text-lg font-semibold text-gray-700 mb-2">No se encontraron jugadores</h3>
@@ -94,9 +131,9 @@ function JugadoresContent() {
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500 mb-4">{jugadores.length} jugador{jugadores.length !== 1 ? 'es' : ''} encontrado{jugadores.length !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-gray-500 mb-4">{ordenados.length} jugador{ordenados.length !== 1 ? 'es' : ''} encontrado{ordenados.length !== 1 ? 's' : ''}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {jugadores.map(j => <PlayerCard key={j.id} perfil={j} />)}
+            {ordenados.map(j => <PlayerCard key={j.id} perfil={j} />)}
           </div>
         </>
       )}

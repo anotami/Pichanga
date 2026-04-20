@@ -27,19 +27,39 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
   if (status === 'ACEPTADO') {
     const comision = solicitud.precio * COMISION_PLATAFORMA
+    const neto = solicitud.precio - comision
     await prisma.transaccion.create({
       data: {
         jugadorId: solicitud.jugadorId,
         partidoId: solicitud.partidoId,
         monto: solicitud.precio,
         comision,
-        neto: solicitud.precio - comision,
+        neto,
         status: 'PENDIENTE'
       }
     })
     await prisma.jugadorPerfil.updateMany({
       where: { usuarioId: solicitud.jugadorId },
       data: { totalPartidos: { increment: 1 } }
+    })
+    await prisma.notificacion.create({
+      data: {
+        usuarioId: solicitud.jugadorId,
+        tipo: 'SOLICITUD_ACEPTADA',
+        titulo: '¡Solicitud aceptada!',
+        mensaje: `Tu solicitud para "${solicitud.partido.titulo}" fue aceptada. Recibirás S/${neto.toFixed(2)} al completarse.`,
+        link: `/partidos/${solicitud.partidoId}`,
+      },
+    })
+  } else {
+    await prisma.notificacion.create({
+      data: {
+        usuarioId: solicitud.jugadorId,
+        tipo: 'SOLICITUD_RECHAZADA',
+        titulo: 'Solicitud rechazada',
+        mensaje: `Tu solicitud para "${solicitud.partido.titulo}" no fue aceptada esta vez.`,
+        link: `/partidos/${solicitud.partidoId}`,
+      },
     })
   }
 

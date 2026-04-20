@@ -31,6 +31,7 @@ model Usuario {
   strikesReportados Strike[]       @relation("reportadorStrike")
   mensajesEnviados Mensaje[]
   wallet           Wallet?
+  notificaciones   Notificacion[]
 }
 
 model JugadorPerfil {
@@ -185,5 +186,17 @@ model AlertaDestacada {
   partido   Partido  @relation(fields: [partidoId], references: [id])
   monto     Float    @default(5)
   pagado    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Notificacion {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  tipo      String   // "SOLICITUD_ACEPTADA" | "SOLICITUD_RECHAZADA" | "NUEVA_SOLICITUD" | "PARTIDO_COMPLETADO" | "NUEVO_MENSAJE"
+  titulo    String
+  mensaje   String
+  leida     Boolean  @default(false)
+  link      String?
   createdAt DateTime @default(now())
 }

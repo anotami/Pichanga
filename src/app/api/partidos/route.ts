@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
 
   const body = await request.json()
-  const { titulo, descripcion, distrito, direccion, fecha, duracion, modalidad, posiciones, presupuestoMax, clubId } = body
+  const { titulo, descripcion, distrito, direccion, fecha, duracion, modalidad, posiciones, presupuestoMax, clubId, nivelRequerido } = body
 
   if (!titulo || !distrito || !fecha || !modalidad || !posiciones) {
     return NextResponse.json({ error: 'Campos requeridos faltantes' }, { status: 400 })
@@ -55,6 +55,7 @@ export async function POST(request: Request) {
       fecha: new Date(fecha),
       duracion: parseInt(duracion),
       modalidad,
+      nivelRequerido: nivelRequerido ?? 'AMATEUR',
       posiciones: JSON.stringify(posiciones),
       presupuestoMax: presupuestoMax ? parseFloat(presupuestoMax) : null
     },

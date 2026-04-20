@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { POSICIONES, DISTRITOS, MODALIDADES } from '@/lib/constants'
+import { POSICIONES, DISTRITOS, MODALIDADES, NIVELES } from '@/lib/constants'
 
 interface PosicionRow { posicion: string; cantidad: number }
 
@@ -11,7 +11,7 @@ export default function CrearPartidoPage() {
   const [error, setError] = useState('')
   const [form, setForm] = useState({
     titulo: '', descripcion: '', distrito: 'Miraflores', direccion: '',
-    fecha: '', hora: '10:00', duracion: '90', modalidad: '5VS5', presupuestoMax: ''
+    fecha: '', hora: '10:00', duracion: '90', modalidad: '5VS5', presupuestoMax: '', nivelRequerido: 'AMATEUR'
   })
   const [posiciones, setPosiciones] = useState<PosicionRow[]>([{ posicion: 'ARQUERO', cantidad: 1 }])
 
@@ -48,6 +48,7 @@ export default function CrearPartidoPage() {
           fecha: fechaCompleta.toISOString(),
           duracion: parseInt(form.duracion),
           modalidad: form.modalidad,
+          nivelRequerido: form.nivelRequerido,
           posiciones,
           presupuestoMax: form.presupuestoMax ? parseFloat(form.presupuestoMax) : null
         })
@@ -94,6 +95,12 @@ export default function CrearPartidoPage() {
                 <option value="120">120 min</option>
               </select>
             </div>
+          </div>
+          <div>
+            <label className="label">Nivel mínimo requerido</label>
+            <select className="input" value={form.nivelRequerido} onChange={e => set('nivelRequerido', e.target.value)}>
+              {NIVELES.map(n => <option key={n.value} value={n.value}>{n.emoji} {n.label}</option>)}
+            </select>
           </div>
         </div>
 

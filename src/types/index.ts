@@ -69,7 +69,10 @@ export interface Partido {
   duracion: number
   modalidad: Modalidad
   posiciones: PosicionNecesaria[]
+  nivelRequerido?: string
   presupuestoMax?: number
+  destacado?: boolean
+  completado?: boolean
   status: PartidoStatus
   createdAt: string
   solicitudes?: Solicitud[]
@@ -85,6 +88,7 @@ export interface Solicitud {
   precio: number
   mensaje?: string
   status: SolicitudStatus
+  asistio?: boolean | null
   createdAt: string
 }
 

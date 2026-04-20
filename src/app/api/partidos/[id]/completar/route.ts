@@ -20,11 +20,50 @@ export async function POST(request: Request, { params }: { params: { id: string 
     data: { status: 'COMPLETADO', completado: true }
   })
 
-  // Marcar asistencia pendiente en las solicitudes aceptadas
+  // Mark attendance as attended for accepted players
   await prisma.solicitud.updateMany({
     where: { partidoId: params.id, status: 'ACEPTADO', asistio: null },
     data: { asistio: true }
   })
 
-  return NextResponse.json({ data: { mensaje: 'Partido completado. Ahora puedes calificar a los jugadores.' } })
+  // Confirm transactions and credit wallet for each accepted player
+  const transacciones = await prisma.transaccion.findMany({
+    where: { partidoId: params.id, status: 'PENDIENTE' }
+  })
+
+  for (const tx of transacciones) {
+    await prisma.transaccion.update({ where: { id: tx.id }, data: { status: 'PAGADO' } })
+    await prisma.wallet.upsert({
+      where: { usuarioId: tx.jugadorId },
+      create: { usuarioId: tx.jugadorId, saldo: tx.neto },
+      update: { saldo: { increment: tx.neto } },
+    })
+    await prisma.notificacion.create({
+      data: {
+        usuarioId: tx.jugadorId,
+        tipo: 'PARTIDO_COMPLETADO',
+        titulo: '¡Pago acreditado!',
+        mensaje: `Se acreditaron S/${tx.neto.toFixed(2)} en tu billetera por el partido "${partido.titulo}".`,
+        link: '/wallet',
+      },
+    })
+  }
+
+  // Notify all accepted players about completion
+  for (const s of partido.solicitudes) {
+    const yaTieneNotif = transacciones.some(t => t.jugadorId === s.jugadorId)
+    if (!yaTieneNotif) {
+      await prisma.notificacion.create({
+        data: {
+          usuarioId: s.jugadorId,
+          tipo: 'PARTIDO_COMPLETADO',
+          titulo: 'Partido completado',
+          mensaje: `El partido "${partido.titulo}" ha sido marcado como completado. Puedes dejar tu reseña.`,
+          link: `/partidos/${params.id}`,
+        },
+      })
+    }
+  }
+
+  return NextResponse.json({ data: { mensaje: 'Partido completado. Pagos acreditados a los jugadores.' } })
 }

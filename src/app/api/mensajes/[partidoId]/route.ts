@@ -8,7 +8,6 @@ export async function GET(request: Request, { params }: { params: { partidoId: s
   const payload = verifyToken(token)
   if (!payload) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
 
-  // Verificar que el usuario es parte del partido
   const partido = await prisma.partido.findUnique({
     where: { id: params.partidoId },
     include: { solicitudes: { where: { status: 'ACEPTADO', jugadorId: payload.userId } } }
@@ -42,20 +41,43 @@ export async function POST(request: Request, { params }: { params: { partidoId: 
 
   const partido = await prisma.partido.findUnique({
     where: { id: params.partidoId },
-    include: { solicitudes: { where: { status: 'ACEPTADO', jugadorId: payload.userId } } }
+    include: {
+      solicitudes: { where: { status: 'ACEPTADO' }, select: { jugadorId: true } },
+    }
   })
   if (!partido) return NextResponse.json({ error: 'Partido no encontrado' }, { status: 404 })
 
   const esOrganizador = partido.organizadorId === payload.userId
-  const esJugadorAceptado = partido.solicitudes.length > 0
+  const esJugadorAceptado = partido.solicitudes.some(s => s.jugadorId === payload.userId)
   if (!esOrganizador && !esJugadorAceptado) {
     return NextResponse.json({ error: 'No puedes enviar mensajes en este partido' }, { status: 403 })
   }
+
+  const autor = await prisma.usuario.findUnique({ where: { id: payload.userId }, select: { nombre: true } })
 
   const mensaje = await prisma.mensaje.create({
     data: { partidoId: params.partidoId, autorId: payload.userId, texto: texto.trim() },
     include: { autor: { select: { id: true, nombre: true } } }
   })
+
+  // Notify all participants except sender
+  const participantes = [
+    partido.organizadorId,
+    ...partido.solicitudes.map(s => s.jugadorId)
+  ].filter(id => id !== payload.userId)
+
+  if (participantes.length > 0) {
+    await prisma.notificacion.createMany({
+      data: participantes.map(uid => ({
+        usuarioId: uid,
+        tipo: 'NUEVO_MENSAJE',
+        titulo: `Mensaje de ${autor?.nombre ?? 'Alguien'}`,
+        mensaje: texto.trim().substring(0, 100),
+        link: `/partidos/${params.partidoId}`,
+      })),
+      skipDuplicates: true,
+    })
+  }
 
   return NextResponse.json({ data: mensaje }, { status: 201 })
 }

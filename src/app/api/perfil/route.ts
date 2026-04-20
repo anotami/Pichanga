@@ -9,6 +9,18 @@ export async function PUT(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
 
   const body = await request.json()
+
+  // Club profile update via PUT
+  if (body.tipo === 'club') {
+    const { nombre, distrito, descripcion, telefono } = body
+    const club = await prisma.club.upsert({
+      where: { usuarioId: payload.userId },
+      create: { usuarioId: payload.userId, nombre, distrito, descripcion, telefono },
+      update: { nombre, distrito, descripcion, telefono },
+    })
+    return NextResponse.json({ data: club })
+  }
+
   const { posicion, posicionSecundaria, nivel, piernaHabil, edad, altura, distrito, descripcion, precio, disponibilidad, foto } = body
 
   const perfil = await prisma.jugadorPerfil.upsert({
