@@ -1,9 +1,9 @@
 export type UserTipo = 'JUGADOR' | 'ORGANIZADOR' | 'CLUB'
-export type Posicion = 'ARQUERO' | 'DEFENSA' | 'MEDIOCAMPISTA' | 'DELANTERO'
+export type Posicion = 'ARQUERO' | 'DEFENSA' | 'MEDIOCAMPISTA' | 'DELANTERO' | 'DERECHA' | 'REVES'
 export type PartidoStatus = 'ABIERTO' | 'EN_CURSO' | 'COMPLETADO' | 'CANCELADO'
 export type SolicitudStatus = 'PENDIENTE' | 'ACEPTADO' | 'RECHAZADO'
 export type TransaccionStatus = 'PENDIENTE' | 'PAGADO'
-export type Modalidad = '5VS5' | '7VS7' | '11VS11'
+export type Modalidad = '5VS5' | '7VS7' | '11VS11' | '2VS2'
 
 export interface DisponibilidadDia {
   dia: string
@@ -31,6 +31,7 @@ export interface Usuario {
 export interface JugadorPerfil {
   id: string
   usuarioId: string
+  deporte?: string
   posicion: Posicion
   distrito: string
   descripcion?: string
@@ -61,6 +62,7 @@ export interface Partido {
   organizador?: Usuario
   clubId?: string
   club?: Club
+  deporte?: string
   titulo: string
   descripcion?: string
   distrito: string
@@ -70,6 +72,9 @@ export interface Partido {
   modalidad: Modalidad
   posiciones: PosicionNecesaria[]
   nivelRequerido?: string
+  tipoPago?: string
+  cuotaCosto?: number
+  pagoJugador?: number
   presupuestoMax?: number
   destacado?: boolean
   completado?: boolean

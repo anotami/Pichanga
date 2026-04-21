@@ -17,7 +17,6 @@ export default function Navbar() {
 
   const esPadel = pathname?.startsWith('/dejada')
   const bgNav = esPadel ? 'bg-green-700' : 'bg-red-600'
-  const bgHover = esPadel ? 'hover:bg-green-800' : 'hover:bg-red-800'
   const textMuted = esPadel ? 'text-green-100' : 'text-red-100'
   const bgUser = esPadel ? 'bg-green-800' : 'bg-red-700'
   const bgUserHover = esPadel ? 'hover:bg-green-900' : 'hover:bg-red-800'
