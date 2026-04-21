@@ -101,6 +101,73 @@ function NPCPanel() {
   )
 }
 
+function PartidosPanel() {
+  const [count, setCount] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [msgColor, setMsgColor] = useState('text-green-300')
+
+  function getToken() { return localStorage.getItem('adminToken') }
+
+  async function fetchCount() {
+    const r = await fetch('/api/admin/seed-partidos', { headers: { Authorization: `Bearer ${getToken()}` } })
+    const j = await r.json()
+    if (j.data) setCount(j.data.partidosCount)
+  }
+
+  useEffect(() => { fetchCount() }, [])
+
+  async function poblar() {
+    if (!confirm('¿Crear 25 partidos de fútbol + 10 de pádel de ejemplo?')) return
+    setLoading(true); setMsg('')
+    try {
+      const r = await fetch('/api/admin/seed-partidos', { method: 'POST', headers: { Authorization: `Bearer ${getToken()}` } })
+      const j = await r.json()
+      if (r.ok) { setMsg(`✅ Creados ${j.data.created} partidos — ${j.data.futbol} fútbol + ${j.data.padel} pádel`); setMsgColor('text-green-300'); fetchCount() }
+      else { setMsg(`❌ ${j.error}`); setMsgColor('text-red-300') }
+    } finally { setLoading(false) }
+  }
+
+  async function eliminar() {
+    if (!confirm(`¿Eliminar los ${count} partidos de ejemplo?`)) return
+    setLoading(true); setMsg('')
+    try {
+      const r = await fetch('/api/admin/seed-partidos', { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } })
+      const j = await r.json()
+      if (r.ok) { setMsg(`🗑️ Eliminados ${j.data.deleted} partidos`); setMsgColor('text-amber-300'); setCount(0) }
+      else { setMsg(`❌ ${j.error}`); setMsgColor('text-red-300') }
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <div className="bg-gray-800 rounded-2xl p-5 border border-blue-800/50 mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h3 className="text-white font-semibold">⚽ Partidos de ejemplo</h3>
+          <p className="text-gray-400 text-xs mt-0.5">25 partidos de fútbol + 10 de pádel con fechas futuras.</p>
+        </div>
+        <div className="text-right">
+          <p className="text-3xl font-bold text-blue-400">{count ?? '...'}</p>
+          <p className="text-gray-500 text-xs">activos</p>
+        </div>
+      </div>
+      {msg && <p className={`text-sm mb-3 ${msgColor}`}>{msg}</p>}
+      <div className="flex gap-3">
+        <button onClick={poblar} disabled={loading || (count !== null && count > 0)}
+          className="bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-600 transition disabled:opacity-40 disabled:cursor-not-allowed">
+          {loading ? 'Creando...' : '⚡ Poblar 35 partidos'}
+        </button>
+        {count !== null && count > 0 && (
+          <button onClick={eliminar} disabled={loading}
+            className="bg-gray-700 text-red-400 border border-red-800 px-4 py-2 rounded-lg text-sm hover:bg-gray-600 transition disabled:opacity-40">
+            🗑️ Eliminar partidos
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -127,6 +194,7 @@ export default function AdminDashboardPage() {
         <p className="text-gray-400 mt-1">Resumen de la plataforma Pichanga</p>
       </div>
       <NPCPanel />
+      <PartidosPanel />
 
       {/* KPIs principales */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

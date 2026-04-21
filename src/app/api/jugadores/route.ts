@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const deporte = searchParams.get('deporte')
   const limit = searchParams.get('limit')
 
-  const where: Record<string, unknown> = { esNPC: false }
+  const where: Record<string, unknown> = {}
   if (deporte) where.deporte = deporte
   if (posicion) where.posicion = posicion
   if (distrito) where.distrito = { contains: distrito }
