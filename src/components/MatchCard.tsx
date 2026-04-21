@@ -1,3 +1,5 @@
+'use client'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Partido } from '@/types'
 import { getPosicion, formatPrecio, formatFecha, formatHora } from '@/lib/constants'
@@ -14,7 +16,10 @@ const STATUS_STYLES: Record<string, string> = {
 const STATUS_LABELS: Record<string, string> = { ABIERTO: 'Abierto', EN_CURSO: 'En curso', COMPLETADO: 'Completado', CANCELADO: 'Cancelado' }
 
 export default function MatchCard({ partido, showActions = true }: Props) {
+  const [verInscriptos, setVerInscriptos] = useState(false)
   const posiciones = Array.isArray(partido.posiciones) ? partido.posiciones : []
+  const inscriptos = partido.solicitudes ?? []
+  const totalCupos = posiciones.reduce((s, p) => s + p.cantidad, 0)
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition overflow-hidden">
@@ -57,6 +62,44 @@ export default function MatchCard({ partido, showActions = true }: Props) {
               </span>
             )
           })}
+        </div>
+
+        {/* Jugadores inscriptos */}
+        <div className="mb-3">
+          <button
+            onClick={e => { e.preventDefault(); setVerInscriptos(v => !v) }}
+            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 transition"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>
+              {inscriptos.length === 0
+                ? `Sin inscriptos · ${totalCupos} cupo${totalCupos !== 1 ? 's' : ''}`
+                : `${inscriptos.length} de ${totalCupos} inscripto${inscriptos.length !== 1 ? 's' : ''}`}
+            </span>
+            <span className="text-gray-400">{verInscriptos ? '▲' : '▼'}</span>
+          </button>
+
+          {verInscriptos && (
+            <div className="mt-2 pl-1 space-y-1.5">
+              {inscriptos.length === 0 ? (
+                <p className="text-xs text-gray-400 italic">Aún no hay jugadores confirmados</p>
+              ) : (
+                inscriptos.map((s, i) => {
+                  const pos = getPosicion(s.posicion)
+                  return (
+                    <div key={i} className="flex items-center gap-2 text-xs text-gray-700">
+                      <span className={`px-1.5 py-0.5 rounded-full font-semibold ${pos?.bg ?? 'bg-gray-100'} ${pos?.text ?? 'text-gray-600'}`}>
+                        {pos?.emoji} {pos?.label ?? s.posicion}
+                      </span>
+                      <span className="font-medium">{s.jugador?.nombre ?? 'Jugador'}</span>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t border-gray-50">

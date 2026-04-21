@@ -20,7 +20,15 @@ export async function GET(request: Request) {
     include: {
       organizador: { select: { id: true, nombre: true } },
       club: true,
-      _count: { select: { solicitudes: true } }
+      _count: { select: { solicitudes: true } },
+      solicitudes: {
+        where: { status: 'ACEPTADO' },
+        select: {
+          id: true,
+          posicion: true,
+          jugador: { select: { id: true, nombre: true } }
+        }
+      }
     },
     orderBy: { fecha: 'asc' }
   })
