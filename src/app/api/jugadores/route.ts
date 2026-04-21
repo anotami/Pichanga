@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   const deporte = searchParams.get('deporte')
 
-  const where: Record<string, unknown> = {}
+  const where: Record<string, unknown> = { esNPC: false }
   if (deporte) where.deporte = deporte
   if (posicion) where.posicion = posicion
   if (distrito) where.distrito = { contains: distrito }
@@ -23,7 +23,12 @@ export async function GET(request: Request) {
 
   const perfiles = await prisma.jugadorPerfil.findMany({
     where,
-    include: {
+    select: {
+      id: true, usuarioId: true, deporte: true, posicion: true, posicionSecundaria: true,
+      nivel: true, piernaHabil: true, edad: true, altura: true, distrito: true,
+      descripcion: true, precio: true, puntos: true, rating: true, ratingPuntualidad: true,
+      ratingNivel: true, ratingActitud: true, totalResenas: true, totalPartidos: true,
+      foto: true, disponibilidad: true, radioAccion: true, verificado: true, createdAt: true,
       usuario: { select: { id: true, nombre: true, tipo: true, baneoHasta: true } }
     },
     orderBy: [{ rating: 'desc' }, { puntos: 'desc' }]

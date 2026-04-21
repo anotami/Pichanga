@@ -60,6 +60,7 @@ model JugadorPerfil {
   disponibilidad     String   @default("[]")
   radioAccion        Int      @default(10)
   verificado         Boolean  @default(false)
+  esNPC              Boolean  @default(false)
   createdAt          DateTime @default(now())
 }
 

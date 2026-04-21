@@ -5,7 +5,7 @@ import { formatPrecio } from '@/lib/constants'
 interface UserAdmin {
   id: string; nombre: string; email: string; telefono?: string; tipo: string
   totalStrikes: number; baneoHasta?: string; createdAt: string
-  perfil?: { posicion: string; nivel: string; distrito: string; precio: number; rating: number; puntos: number; totalPartidos: number; verificado: boolean }
+  perfil?: { posicion: string; nivel: string; distrito: string; precio: number; rating: number; puntos: number; totalPartidos: number; verificado: boolean; esNPC?: boolean; deporte?: string }
   _count: { solicitudes: number; partidosOrg: number }
 }
 
@@ -14,6 +14,7 @@ export default function AdminJugadoresPage() {
   const [loading, setLoading] = useState(true)
   const [filtroTipo, setFiltroTipo] = useState('JUGADOR')
   const [filtroBan, setFiltroBan] = useState(false)
+  const [filtroNPC, setFiltroNPC] = useState<'todos' | 'solo_reales' | 'solo_npc'>('todos')
   const [busqueda, setBusqueda] = useState('')
   const [msg, setMsg] = useState('')
 
@@ -21,6 +22,8 @@ export default function AdminJugadoresPage() {
     const token = localStorage.getItem('adminToken')
     const params = new URLSearchParams({ tipo: filtroTipo })
     if (filtroBan) params.set('baneados', 'true')
+    if (filtroNPC === 'solo_npc') params.set('npc', 'true')
+    if (filtroNPC === 'solo_reales') params.set('npc', 'false')
     if (busqueda) params.set('q', busqueda)
     setLoading(true)
     fetch(`/api/admin/usuarios?${params}`, { headers: { Authorization: `Bearer ${token}` } })
@@ -29,7 +32,7 @@ export default function AdminJugadoresPage() {
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { fetchData() }, [filtroTipo, filtroBan])
+  useEffect(() => { fetchData() }, [filtroTipo, filtroBan, filtroNPC])
 
   async function accion(id: string, accion: string, dias?: number) {
     const token = localStorage.getItem('adminToken')
@@ -75,6 +78,15 @@ export default function AdminJugadoresPage() {
           <input type="checkbox" checked={filtroBan} onChange={e => setFiltroBan(e.target.checked)} className="rounded" />
           Solo baneados
         </label>
+        <div>
+          <label className="text-gray-400 text-xs mb-1 block">NPCs</label>
+          <select value={filtroNPC} onChange={e => setFiltroNPC(e.target.value as typeof filtroNPC)}
+            className="bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm">
+            <option value="todos">Todos</option>
+            <option value="solo_reales">Solo reales</option>
+            <option value="solo_npc">🤖 Solo NPCs</option>
+          </select>
+        </div>
         <button onClick={fetchData} className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition">Buscar</button>
       </div>
 
@@ -92,6 +104,8 @@ export default function AdminJugadoresPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-white font-semibold">{u.nombre}</span>
+                      {u.perfil?.esNPC && <span className="text-xs bg-purple-900 text-purple-300 px-2 py-0.5 rounded-full font-bold">🤖 NPC</span>}
+                      {u.perfil?.deporte === 'PADEL' && <span className="text-xs bg-green-900 text-green-300 px-2 py-0.5 rounded-full">🏓 Pádel</span>}
                       {esBaneado && <span className="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded-full">🚫 Baneado hasta {new Date(u.baneoHasta!).toLocaleDateString('es-PE')}</span>}
                       {u.perfil?.verificado && <span className="text-xs bg-blue-900 text-blue-300 px-2 py-0.5 rounded-full">✓ Verificado</span>}
                       {u.totalStrikes > 0 && <span className="text-xs bg-amber-900 text-amber-300 px-2 py-0.5 rounded-full">{u.totalStrikes} strike{u.totalStrikes > 1 ? 's' : ''}</span>}

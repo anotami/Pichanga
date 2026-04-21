@@ -18,11 +18,14 @@ export async function GET(request: Request) {
   const tipo = searchParams.get('tipo')
   const baneados = searchParams.get('baneados')
   const busqueda = searchParams.get('q')
+  const npc = searchParams.get('npc')
 
   const usuarios = await prisma.usuario.findMany({
     where: {
       ...(tipo ? { tipo } : {}),
       ...(baneados === 'true' ? { baneoHasta: { gt: new Date() } } : {}),
+      ...(npc === 'true' ? { perfil: { esNPC: true } } : {}),
+      ...(npc === 'false' ? { perfil: { esNPC: false } } : {}),
       ...(busqueda ? { OR: [{ nombre: { contains: busqueda } }, { email: { contains: busqueda } }] } : {})
     },
     include: { perfil: true, _count: { select: { solicitudes: true, partidosOrg: true } } },

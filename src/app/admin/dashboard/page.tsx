@@ -14,7 +14,94 @@ interface Stats {
   registrosRecientes: Array<{ id: string; nombre: string; tipo: string; createdAt: string }>
 }
 
-export default function AdminDashboard() {
+function NPCPanel() {
+  const [npcCount, setNpcCount] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [msgColor, setMsgColor] = useState('text-green-300')
+
+  function getToken() { return localStorage.getItem('adminToken') }
+
+  async function fetchCount() {
+    const r = await fetch('/api/admin/seed-npcs', { headers: { Authorization: `Bearer ${getToken()}` } })
+    const j = await r.json()
+    if (j.data) setNpcCount(j.data.npcCount)
+  }
+
+  useEffect(() => { fetchCount() }, [])
+
+  async function poblar() {
+    if (!confirm('¿Crear 532 jugadores de fútbol + 87 de pádel? Esto puede tardar ~30 segundos.')) return
+    setLoading(true)
+    setMsg('')
+    try {
+      const r = await fetch('/api/admin/seed-npcs', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken()}` }
+      })
+      const j = await r.json()
+      if (r.ok) {
+        setMsg(`✅ Creados ${j.data.created} NPCs — ${j.data.futbol} fútbol + ${j.data.padel} pádel`)
+        setMsgColor('text-green-300')
+        fetchCount()
+      } else {
+        setMsg(`❌ ${j.error}`)
+        setMsgColor('text-red-300')
+      }
+    } finally { setLoading(false) }
+  }
+
+  async function eliminar() {
+    if (!confirm(`¿Eliminar los ${npcCount} jugadores NPC? Esta acción es irreversible.`)) return
+    setLoading(true)
+    setMsg('')
+    try {
+      const r = await fetch('/api/admin/seed-npcs', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${getToken()}` }
+      })
+      const j = await r.json()
+      if (r.ok) {
+        setMsg(`🗑️ Eliminados ${j.data.deleted} NPCs`)
+        setMsgColor('text-amber-300')
+        setNpcCount(0)
+      } else {
+        setMsg(`❌ ${j.error}`)
+        setMsgColor('text-red-300')
+      }
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <div className="bg-gray-800 rounded-2xl p-5 border border-purple-800/50 mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h3 className="text-white font-semibold flex items-center gap-2">🤖 Jugadores NPC (solo admin)</h3>
+          <p className="text-gray-400 text-xs mt-0.5">Jugadores ficticios para poblar la plataforma. Invisibles como NPC para usuarios.</p>
+        </div>
+        <div className="text-right">
+          <p className="text-3xl font-bold text-purple-400">{npcCount ?? '...'}</p>
+          <p className="text-gray-500 text-xs">activos</p>
+        </div>
+      </div>
+      {msg && <p className={`text-sm mb-3 ${msgColor}`}>{msg}</p>}
+      <div className="flex gap-3">
+        <button onClick={poblar} disabled={loading || (npcCount !== null && npcCount > 0)}
+          className="bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-600 transition disabled:opacity-40 disabled:cursor-not-allowed">
+          {loading ? 'Generando...' : '⚡ Poblar 619 NPCs'}
+        </button>
+        {npcCount !== null && npcCount > 0 && (
+          <button onClick={eliminar} disabled={loading}
+            className="bg-gray-700 text-red-400 border border-red-800 px-4 py-2 rounded-lg text-sm hover:bg-gray-600 transition disabled:opacity-40">
+            🗑️ Eliminar NPCs
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -39,6 +126,7 @@ export default function AdminDashboard() {
         <h1 className="text-2xl font-bold text-white">Dashboard General</h1>
         <p className="text-gray-400 mt-1">Resumen de la plataforma Pichanga</p>
       </div>
+      <NPCPanel />
 
       {/* KPIs principales */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
