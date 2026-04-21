@@ -2,9 +2,107 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import PlayerCard from '@/components/PlayerCard'
 import { JugadorPerfil } from '@/types'
-import { POSICIONES, DISTRITOS, NIVELES } from '@/lib/constants'
+import { POSICIONES, DISTRITOS, NIVELES, getPosicion, formatPrecio } from '@/lib/constants'
+
+const MEDALLAS = ['🥇', '🥈', '🥉']
+
+function Top20({ deporte }: { deporte: string }) {
+  const [top, setTop] = useState<JugadorPerfil[]>([])
+  const [loading, setLoading] = useState(true)
+  const [abierto, setAbierto] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/jugadores?deporte=${deporte}&limit=20`)
+      .then(r => r.json())
+      .then(j => setTop(j.data ?? []))
+      .finally(() => setLoading(false))
+  }, [deporte])
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
+      <button
+        onClick={() => setAbierto(v => !v)}
+        className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-xl">🏆</span>
+          <span className="font-bold text-gray-900">Top 20 · Fútbol</span>
+          <span className="text-xs bg-red-100 text-red-700 font-semibold px-2 py-0.5 rounded-full">Ranking global</span>
+        </div>
+        <span className="text-gray-400 text-sm">{abierto ? '▲ ocultar' : '▼ ver ranking'}</span>
+      </button>
+
+      {abierto && (
+        loading ? (
+          <div className="px-6 pb-6 text-center text-gray-400 text-sm py-8 animate-pulse">Cargando ranking...</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-t border-b border-gray-100">
+                  <th className="text-left px-4 py-2.5 text-gray-500 font-semibold w-10">#</th>
+                  <th className="text-left px-4 py-2.5 text-gray-500 font-semibold">Jugador</th>
+                  <th className="text-left px-4 py-2.5 text-gray-500 font-semibold hidden sm:table-cell">Posición</th>
+                  <th className="text-left px-4 py-2.5 text-gray-500 font-semibold hidden md:table-cell">Distrito</th>
+                  <th className="text-center px-4 py-2.5 text-gray-500 font-semibold">Rating</th>
+                  <th className="text-center px-4 py-2.5 text-gray-500 font-semibold hidden sm:table-cell">Partidos</th>
+                  <th className="text-center px-4 py-2.5 text-gray-500 font-semibold">Puntos</th>
+                  <th className="text-center px-4 py-2.5 text-gray-500 font-semibold hidden lg:table-cell">Precio</th>
+                  <th className="w-8"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {top.map((j, i) => {
+                  const pos = getPosicion(j.posicion)
+                  return (
+                    <tr key={j.id} className={`hover:bg-gray-50 transition ${i < 3 ? 'bg-amber-50/40' : ''}`}>
+                      <td className="px-4 py-3 text-center font-bold text-gray-500">
+                        {i < 3 ? MEDALLAS[i] : <span className="text-gray-400">{i + 1}</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-bold text-sm flex-shrink-0">
+                            {(j.usuario?.nombre ?? 'J').charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 leading-tight">{j.usuario?.nombre ?? 'Jugador'}</p>
+                            {j.verificado && <span className="text-xs text-blue-500">✓ Verificado</span>}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        {pos && (
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${pos.bg} ${pos.text}`}>
+                            {pos.emoji} {pos.label}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 hidden md:table-cell">{j.distrito}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="font-bold text-amber-500">★ {j.rating.toFixed(1)}</span>
+                      </td>
+                      <td className="px-4 py-3 text-center text-gray-600 hidden sm:table-cell">{j.totalPartidos}</td>
+                      <td className="px-4 py-3 text-center font-semibold text-red-600">{j.puntos}</td>
+                      <td className="px-4 py-3 text-center text-gray-500 hidden lg:table-cell">{formatPrecio(j.precio)}</td>
+                      <td className="px-4 py-3 text-center">
+                        <Link href={`/jugadores/${j.usuarioId}`} className="text-red-500 hover:text-red-700 text-xs font-medium">
+                          Ver →
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )
+      )}
+    </div>
+  )
+}
 
 function JugadoresContent() {
   const searchParams = useSearchParams()
@@ -61,6 +159,8 @@ function JugadoresContent() {
           </div>
         </div>
       </div>
+
+      <Top20 deporte="FUTBOL" />
 
       <div className="card mb-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">

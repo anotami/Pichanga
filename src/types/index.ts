@@ -33,6 +33,7 @@ export interface JugadorPerfil {
   usuarioId: string
   deporte?: string
   posicion: Posicion
+  nivel?: string
   distrito: string
   descripcion?: string
   precio: number

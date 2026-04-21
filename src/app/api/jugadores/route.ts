@@ -10,8 +10,8 @@ export async function GET(request: Request) {
   const busqueda = searchParams.get('q')
 
   const verificado = searchParams.get('verificado')
-
   const deporte = searchParams.get('deporte')
+  const limit = searchParams.get('limit')
 
   const where: Record<string, unknown> = { esNPC: false }
   if (deporte) where.deporte = deporte
@@ -43,5 +43,6 @@ export async function GET(request: Request) {
       p.distrito.toLowerCase().includes(busqueda.toLowerCase())
     )
 
-  return NextResponse.json({ data: resultado })
+  const final = limit ? resultado.slice(0, parseInt(limit)) : resultado
+  return NextResponse.json({ data: final })
 }
