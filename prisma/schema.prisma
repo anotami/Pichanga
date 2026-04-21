@@ -39,9 +39,10 @@ model JugadorPerfil {
   id                 String   @id @default(cuid())
   usuarioId          String   @unique
   usuario            Usuario  @relation(fields: [usuarioId], references: [id])
-  posicion           String   // "ARQUERO" | "DEFENSA" | "MEDIOCAMPISTA" | "DELANTERO"
+  deporte            String   @default("FUTBOL") // "FUTBOL" | "PADEL"
+  posicion           String   // "ARQUERO" | "DEFENSA" | "MEDIOCAMPISTA" | "DELANTERO" | "DERECHA" | "REVES"
   posicionSecundaria String?
-  nivel              String   @default("AMATEUR") // "AMATEUR" | "INTERMEDIO" | "COMPETITIVO"
+  nivel              String   @default("AMATEUR") // football: "AMATEUR"|"INTERMEDIO"|"COMPETITIVO" padel: "PRINCIPIANTE"|"INTERMEDIO"|"AVANZADO"|"COMPETIDOR"
   piernaHabil        String   @default("DERECHA") // "DERECHA" | "IZQUIERDA" | "AMBAS"
   edad               Int?
   altura             Int?     // en cm
@@ -80,6 +81,7 @@ model Partido {
   organizador    Usuario   @relation(fields: [organizadorId], references: [id])
   clubId         String?
   club           Club?     @relation(fields: [clubId], references: [id])
+  deporte        String    @default("FUTBOL") // "FUTBOL" | "PADEL"
   titulo         String
   descripcion    String?
   distrito       String

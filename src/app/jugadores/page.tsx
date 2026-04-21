@@ -20,7 +20,7 @@ function JugadoresContent() {
 
   useEffect(() => {
     setLoading(true)
-    const params = new URLSearchParams()
+    const params = new URLSearchParams({ deporte: 'FUTBOL' })
     if (posicion) params.set('posicion', posicion)
     if (distrito) params.set('distrito', distrito)
     if (precioMax) params.set('precioMax', precioMax)

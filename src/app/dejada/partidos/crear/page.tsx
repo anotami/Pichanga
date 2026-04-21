@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { POSICIONES, DISTRITOS, MODALIDADES, NIVELES, formatPrecio } from '@/lib/constants'
+import { POSICIONES_PADEL, DISTRITOS, NIVELES_PADEL, formatPrecio } from '@/lib/constants'
 
 interface PosicionRow { posicion: string; cantidad: number }
 
@@ -11,17 +11,17 @@ const TIPOS_PAGO = [
   { value: 'SE_LE_PAGA', label: 'Se le paga', desc: 'El jugador recibe un pago por jugar', emoji: '💰' },
 ]
 
-export default function CrearPartidoPage() {
+export default function CrearPartidoPadelPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
     titulo: '', descripcion: '', distrito: 'Miraflores', direccion: '',
-    fecha: '', hora: '10:00', duracion: '90', modalidad: '5VS5',
-    presupuestoMax: '', nivelRequerido: 'AMATEUR',
+    fecha: '', hora: '10:00', duracion: '60',
+    presupuestoMax: '', nivelRequerido: 'PRINCIPIANTE',
     tipoPago: 'PAGA_CUOTA', cuotaCosto: '', pagoJugador: ''
   })
-  const [posiciones, setPosiciones] = useState<PosicionRow[]>([{ posicion: 'ARQUERO', cantidad: 1 }])
+  const [posiciones, setPosiciones] = useState<PosicionRow[]>([{ posicion: 'DERECHA', cantidad: 1 }])
 
   useEffect(() => {
     if (!localStorage.getItem('token')) router.push('/login')
@@ -29,7 +29,7 @@ export default function CrearPartidoPage() {
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
-  function addPosicion() { setPosiciones(p => [...p, { posicion: 'DELANTERO', cantidad: 1 }]) }
+  function addPosicion() { setPosiciones(p => [...p, { posicion: 'REVES', cantidad: 1 }]) }
   function removePosicion(i: number) { setPosiciones(p => p.filter((_, idx) => idx !== i)) }
   function updatePosicion(i: number, k: keyof PosicionRow, v: string | number) {
     setPosiciones(p => p.map((row, idx) => idx === i ? { ...row, [k]: v } : row))
@@ -51,8 +51,8 @@ export default function CrearPartidoPage() {
           distrito: form.distrito, direccion: form.direccion,
           fecha: fechaCompleta.toISOString(),
           duracion: parseInt(form.duracion),
-          modalidad: form.modalidad,
-          deporte: 'FUTBOL',
+          modalidad: '2VS2',
+          deporte: 'PADEL',
           nivelRequerido: form.nivelRequerido,
           tipoPago: form.tipoPago,
           cuotaCosto: form.cuotaCosto ? parseFloat(form.cuotaCosto) : null,
@@ -71,8 +71,11 @@ export default function CrearPartidoPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Publicar partido</h1>
-        <p className="text-gray-500">Completa los datos y recibirás ofertas de jugadores</p>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-2xl">🏓</span>
+          <h1 className="text-3xl font-bold text-gray-900">Publicar partido de pádel</h1>
+        </div>
+        <p className="text-gray-500">Completa los datos y recibirás propuestas de jugadores</p>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">{error}</div>}
@@ -82,19 +85,13 @@ export default function CrearPartidoPage() {
           <h2 className="font-semibold text-gray-900">Información básica</h2>
           <div>
             <label className="label">Título del partido *</label>
-            <input className="input" placeholder="Ej: Se busca arquero para fulbito el sábado" value={form.titulo} onChange={e => set('titulo', e.target.value)} required />
+            <input className="input" placeholder="Ej: Se busca revés para partido este sábado en San Isidro" value={form.titulo} onChange={e => set('titulo', e.target.value)} required />
           </div>
           <div>
             <label className="label">Descripción</label>
-            <textarea className="input" rows={2} placeholder="Detalles adicionales del partido..." value={form.descripcion} onChange={e => set('descripcion', e.target.value)} />
+            <textarea className="input" rows={2} placeholder="Detalles del club, cancha, nivel del partido..." value={form.descripcion} onChange={e => set('descripcion', e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">Modalidad</label>
-              <select className="input" value={form.modalidad} onChange={e => set('modalidad', e.target.value)}>
-                {MODALIDADES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
-            </div>
             <div>
               <label className="label">Duración (minutos)</label>
               <select className="input" value={form.duracion} onChange={e => set('duracion', e.target.value)}>
@@ -103,12 +100,12 @@ export default function CrearPartidoPage() {
                 <option value="120">120 min</option>
               </select>
             </div>
-          </div>
-          <div>
-            <label className="label">Nivel mínimo requerido</label>
-            <select className="input" value={form.nivelRequerido} onChange={e => set('nivelRequerido', e.target.value)}>
-              {NIVELES.map(n => <option key={n.value} value={n.value}>{n.emoji} {n.label}</option>)}
-            </select>
+            <div>
+              <label className="label">Nivel mínimo</label>
+              <select className="input" value={form.nivelRequerido} onChange={e => set('nivelRequerido', e.target.value)}>
+                {NIVELES_PADEL.map(n => <option key={n.value} value={n.value}>{n.emoji} {n.label}</option>)}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -131,8 +128,8 @@ export default function CrearPartidoPage() {
             </select>
           </div>
           <div>
-            <label className="label">Dirección (opcional)</label>
-            <input className="input" placeholder="Av. Principal 123, cerca al parque" value={form.direccion} onChange={e => set('direccion', e.target.value)} />
+            <label className="label">Club / Dirección (opcional)</label>
+            <input className="input" placeholder="Club de Pádel Lima, Av. Principal 123" value={form.direccion} onChange={e => set('direccion', e.target.value)} />
           </div>
         </div>
 
@@ -141,19 +138,17 @@ export default function CrearPartidoPage() {
           <div className="grid grid-cols-3 gap-3">
             {TIPOS_PAGO.map(t => (
               <button key={t.value} type="button" onClick={() => set('tipoPago', t.value)}
-                className={`p-3 rounded-xl border-2 text-center transition ${form.tipoPago === t.value ? 'border-red-500 bg-red-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                className={`p-3 rounded-xl border-2 text-center transition ${form.tipoPago === t.value ? 'border-green-600 bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}>
                 <div className="text-2xl mb-1">{t.emoji}</div>
-                <p className={`text-xs font-semibold ${form.tipoPago === t.value ? 'text-red-700' : 'text-gray-700'}`}>{t.label}</p>
+                <p className={`text-xs font-semibold ${form.tipoPago === t.value ? 'text-green-700' : 'text-gray-700'}`}>{t.label}</p>
                 <p className="text-xs text-gray-400 mt-0.5 leading-tight">{t.desc}</p>
               </button>
             ))}
           </div>
-
           {form.tipoPago === 'PAGA_CUOTA' && (
             <div>
               <label className="label">Monto de la cuota (S/)</label>
-              <input type="number" className="input" placeholder="15" min="0" value={form.cuotaCosto} onChange={e => set('cuotaCosto', e.target.value)} />
-              <p className="text-xs text-gray-400 mt-1">Lo que paga cada jugador para participar</p>
+              <input type="number" className="input" placeholder="20" min="0" value={form.cuotaCosto} onChange={e => set('cuotaCosto', e.target.value)} />
             </div>
           )}
           {form.tipoPago === 'SE_LE_PAGA' && (
@@ -172,30 +167,30 @@ export default function CrearPartidoPage() {
         <div className="card space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-gray-900">Jugadores necesarios</h2>
-            <button type="button" onClick={addPosicion} className="text-sm text-red-600 font-medium hover:text-red-700">+ Agregar posición</button>
+            <button type="button" onClick={addPosicion} className="text-sm text-green-700 font-medium hover:text-green-800">+ Agregar posición</button>
           </div>
           {posiciones.map((row, i) => (
             <div key={i} className="flex items-center gap-3">
               <select className="input flex-1" value={row.posicion} onChange={e => updatePosicion(i, 'posicion', e.target.value)}>
-                {POSICIONES.map(p => <option key={p.value} value={p.value}>{p.emoji} {p.label}</option>)}
+                {POSICIONES_PADEL.map(p => <option key={p.value} value={p.value}>{p.emoji} {p.label}</option>)}
               </select>
-              <input type="number" className="input w-24" min="1" max="11" value={row.cantidad}
-                onChange={e => updatePosicion(i, 'cantidad', parseInt(e.target.value))}
-                placeholder="N°" />
+              <input type="number" className="input w-24" min="1" max="4" value={row.cantidad}
+                onChange={e => updatePosicion(i, 'cantidad', parseInt(e.target.value))} />
               {posiciones.length > 1 && (
                 <button type="button" onClick={() => removePosicion(i)} className="text-gray-400 hover:text-red-500 transition">✕</button>
               )}
             </div>
           ))}
           <div>
-            <label className="label">Presupuesto máximo por jugador (S/) — opcional</label>
+            <label className="label">Presupuesto máximo (S/) — opcional</label>
             <input type="number" className="input" placeholder="Sin límite" min="0" value={form.presupuestoMax} onChange={e => set('presupuestoMax', e.target.value)} />
-            <p className="text-xs text-gray-400 mt-1">La plataforma retiene el 10% de comisión</p>
           </div>
         </div>
 
-        <button type="submit" className="btn-primary w-full" disabled={loading}>
-          {loading ? 'Publicando...' : 'Publicar partido'}
+        <button type="submit"
+          className="w-full py-3 bg-green-700 text-white font-bold rounded-2xl hover:bg-green-800 transition text-base"
+          disabled={loading}>
+          {loading ? 'Publicando...' : '🏓 Publicar partido de pádel'}
         </button>
       </form>
     </div>

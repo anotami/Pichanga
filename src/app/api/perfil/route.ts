@@ -21,12 +21,13 @@ export async function PUT(request: Request) {
     return NextResponse.json({ data: club })
   }
 
-  const { posicion, posicionSecundaria, nivel, piernaHabil, edad, altura, distrito, descripcion, precio, disponibilidad, foto, radioAccion } = body
+  const { posicion, posicionSecundaria, nivel, piernaHabil, edad, altura, distrito, descripcion, precio, disponibilidad, foto, radioAccion, deporte } = body
 
   const perfil = await prisma.jugadorPerfil.upsert({
     where: { usuarioId: payload.userId },
     create: {
       usuarioId: payload.userId,
+      deporte: deporte ?? 'FUTBOL',
       posicion, posicionSecundaria, nivel: nivel ?? 'AMATEUR',
       piernaHabil: piernaHabil ?? 'DERECHA',
       edad: edad ? parseInt(edad) : null,
@@ -36,6 +37,7 @@ export async function PUT(request: Request) {
       radioAccion: radioAccion ? parseInt(radioAccion) : 10,
     },
     update: {
+      deporte: deporte ?? undefined,
       posicion, posicionSecundaria, nivel,
       piernaHabil, edad: edad ? parseInt(edad) : null,
       altura: altura ? parseInt(altura) : null,

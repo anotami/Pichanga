@@ -5,6 +5,22 @@ export const POSICIONES = [
   { value: 'DELANTERO', label: 'Delantero', emoji: '⚡', bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-300' },
 ]
 
+export const POSICIONES_PADEL = [
+  { value: 'DERECHA', label: 'Derecha', emoji: '🎾', bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-300' },
+  { value: 'REVES', label: 'Revés', emoji: '🏓', bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300' },
+]
+
+export const NIVELES_PADEL = [
+  { value: 'PRINCIPIANTE', label: 'Principiante', emoji: '🌱', desc: 'Empezando a jugar pádel' },
+  { value: 'INTERMEDIO', label: 'Intermedio', emoji: '🎯', desc: 'Juego regular, buen manejo' },
+  { value: 'AVANZADO', label: 'Avanzado', emoji: '🏆', desc: 'Alto nivel técnico' },
+  { value: 'COMPETIDOR', label: 'Competidor', emoji: '⭐', desc: 'Nivel competitivo' },
+]
+
+export const MODALIDADES_PADEL = [
+  { value: '2VS2', label: 'Pádel 2vs2' },
+]
+
 export const NIVELES = [
   { value: 'AMATEUR', label: 'Amateur', emoji: '⚽', desc: 'Juego recreativo, diversión ante todo' },
   { value: 'INTERMEDIO', label: 'Intermedio', emoji: '🏅', desc: 'Liga amateur, buen nivel técnico' },
@@ -81,4 +97,12 @@ export function formatHora(fecha: string | Date): string {
 export function esBaneado(baneoHasta?: string | Date | null): boolean {
   if (!baneoHasta) return false
   return new Date(baneoHasta) > new Date()
+}
+
+export function getPosicionPadel(value: string) {
+  return POSICIONES_PADEL.find(p => p.value === value)
+}
+
+export function getNivelPadel(value: string) {
+  return NIVELES_PADEL.find(n => n.value === value)
 }

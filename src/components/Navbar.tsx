@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 interface UsuarioBasico { id: string; nombre: string; tipo: string }
 
@@ -13,13 +13,24 @@ export default function Navbar() {
   const [notifs, setNotifs] = useState<Array<{ id: string; titulo: string; mensaje: string; leida: boolean; link?: string; createdAt: string }>>([])
   const notifRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+  const pathname = usePathname()
+
+  const esPadel = pathname?.startsWith('/dejada')
+  const bgNav = esPadel ? 'bg-green-700' : 'bg-red-600'
+  const bgHover = esPadel ? 'hover:bg-green-800' : 'hover:bg-red-800'
+  const textMuted = esPadel ? 'text-green-100' : 'text-red-100'
+  const bgUser = esPadel ? 'bg-green-800' : 'bg-red-700'
+  const bgUserHover = esPadel ? 'hover:bg-green-900' : 'hover:bg-red-800'
+  const bgMobile = esPadel ? 'bg-green-800 border-green-600' : 'bg-red-700 border-red-500'
+  const btnRegister = esPadel
+    ? 'bg-white text-green-700 hover:bg-green-50'
+    : 'bg-white text-red-600 hover:bg-red-50'
 
   useEffect(() => {
     const token = localStorage.getItem('token')
     const u = localStorage.getItem('usuario')
     if (token && u) {
       setUsuario(JSON.parse(u))
-      // Load notifications count
       fetch('/api/notificaciones', { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.json())
         .then(j => { if (j.data) { setNoLeidas(j.data.noLeidas); setNotifs(j.data.notificaciones) } })
@@ -51,32 +62,42 @@ export default function Navbar() {
     setNotifs(prev => prev.map(n => ({ ...n, leida: true })))
   }
 
+  const logoHref = esPadel ? '/dejada' : pathname === '/' ? '/' : '/pichanga'
+  const navLinks = esPadel
+    ? [{ href: '/dejada/jugadores', label: 'Jugadores' }, { href: '/dejada/partidos', label: 'Partidos' }]
+    : [{ href: '/jugadores', label: 'Jugadores' }, { href: '/partidos', label: 'Partidos' }]
+
   return (
-    <nav className="bg-red-600 shadow-lg sticky top-0 z-50">
+    <nav className={`${bgNav} shadow-lg sticky top-0 z-50`}>
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl">⚽</span>
-            <span className="text-white font-bold text-xl tracking-tight">Pichanga</span>
-            <span className="text-red-200 text-xs font-medium hidden sm:block">Peru</span>
+          <Link href={logoHref} className="flex items-center gap-2">
+            <span className="text-2xl">{esPadel ? '🏓' : '⚽'}</span>
+            <span className="text-white font-bold text-xl tracking-tight">
+              {esPadel ? 'DejadaPeru' : 'Pichanga'}
+            </span>
+            <span className={`${textMuted} text-xs font-medium hidden sm:block`}>Peru</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/jugadores" className="text-red-100 hover:text-white transition font-medium">Jugadores</Link>
-            <Link href="/partidos" className="text-red-100 hover:text-white transition font-medium">Partidos</Link>
+            {navLinks.map(l => (
+              <Link key={l.href} href={l.href} className={`${textMuted} hover:text-white transition font-medium`}>
+                {l.label}
+              </Link>
+            ))}
             {usuario ? (
               <div className="flex items-center gap-3">
-                <Link href="/dashboard" className="text-red-100 hover:text-white transition font-medium">Dashboard</Link>
+                <Link href="/dashboard" className={`${textMuted} hover:text-white transition font-medium`}>Dashboard</Link>
 
                 {/* Notification Bell */}
                 <div className="relative" ref={notifRef}>
                   <button onClick={() => { setNotifOpen(!notifOpen); if (!notifOpen && noLeidas > 0) marcarLeidas() }}
-                    className="relative text-red-100 hover:text-white transition p-1">
+                    className={`relative ${textMuted} hover:text-white transition p-1`}>
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
                     {noLeidas > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-red-600 text-xs font-bold rounded-full flex items-center justify-center">
+                      <span className={`absolute -top-1 -right-1 w-5 h-5 bg-white ${esPadel ? 'text-green-700' : 'text-red-600'} text-xs font-bold rounded-full flex items-center justify-center`}>
                         {noLeidas > 9 ? '9+' : noLeidas}
                       </span>
                     )}
@@ -85,14 +106,14 @@ export default function Navbar() {
                     <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
                       <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                         <span className="font-semibold text-gray-900 text-sm">Notificaciones</span>
-                        {noLeidas > 0 && <button onClick={marcarLeidas} className="text-xs text-red-500 hover:text-red-700">Marcar todas leídas</button>}
+                        {noLeidas > 0 && <button onClick={marcarLeidas} className={`text-xs ${esPadel ? 'text-green-600 hover:text-green-800' : 'text-red-500 hover:text-red-700'}`}>Marcar todas leídas</button>}
                       </div>
                       <div className="max-h-80 overflow-y-auto">
                         {notifs.length === 0 ? (
                           <p className="text-center text-gray-400 text-sm py-8">Sin notificaciones</p>
                         ) : notifs.slice(0, 15).map(n => (
                           <a key={n.id} href={n.link ?? '#'} onClick={() => setNotifOpen(false)}
-                            className={`block px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition ${!n.leida ? 'bg-red-50' : ''}`}>
+                            className={`block px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition ${!n.leida ? (esPadel ? 'bg-green-50' : 'bg-red-50') : ''}`}>
                             <p className="text-sm font-medium text-gray-900">{n.titulo}</p>
                             <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{n.mensaje}</p>
                             <p className="text-xs text-gray-400 mt-1">{new Date(n.createdAt).toLocaleDateString('es-PE')}</p>
@@ -105,8 +126,8 @@ export default function Navbar() {
 
                 <div className="relative">
                   <button onClick={() => setMenuAbierto(!menuAbierto)}
-                    className="flex items-center gap-2 bg-red-700 text-white rounded-full px-3 py-1.5 text-sm font-medium hover:bg-red-800 transition">
-                    <span className="w-6 h-6 bg-white text-red-600 rounded-full flex items-center justify-center text-xs font-bold">
+                    className={`flex items-center gap-2 ${bgUser} text-white rounded-full px-3 py-1.5 text-sm font-medium ${bgUserHover} transition`}>
+                    <span className={`w-6 h-6 bg-white ${esPadel ? 'text-green-700' : 'text-red-600'} rounded-full flex items-center justify-center text-xs font-bold`}>
                       {usuario.nombre.charAt(0).toUpperCase()}
                     </span>
                     {usuario.nombre.split(' ')[0]}
@@ -119,15 +140,15 @@ export default function Navbar() {
                       {usuario.tipo === 'CLUB' && <Link href="/mi-club" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setMenuAbierto(false)}>Mi club</Link>}
                       <Link href="/wallet" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setMenuAbierto(false)}>💰 Mi billetera</Link>
                       <hr className="my-1" />
-                      <button onClick={cerrarSesion} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Cerrar sesión</button>
+                      <button onClick={cerrarSesion} className={`block w-full text-left px-4 py-2 text-sm ${esPadel ? 'text-green-700 hover:bg-green-50' : 'text-red-600 hover:bg-red-50'}`}>Cerrar sesión</button>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <Link href="/login" className="text-red-100 hover:text-white transition font-medium">Ingresar</Link>
-                <Link href="/registro" className="bg-white text-red-600 rounded-full px-4 py-1.5 text-sm font-semibold hover:bg-red-50 transition">Registrarse</Link>
+                <Link href="/login" className={`${textMuted} hover:text-white transition font-medium`}>Ingresar</Link>
+                <Link href="/registro" className={`${btnRegister} rounded-full px-4 py-1.5 text-sm font-semibold transition`}>Registrarse</Link>
               </div>
             )}
           </div>
@@ -142,21 +163,22 @@ export default function Navbar() {
       </div>
 
       {menuAbierto && (
-        <div className="md:hidden bg-red-700 border-t border-red-500 px-4 py-3 space-y-2">
-          <Link href="/jugadores" className="block text-red-100 py-2" onClick={() => setMenuAbierto(false)}>Jugadores</Link>
-          <Link href="/partidos" className="block text-red-100 py-2" onClick={() => setMenuAbierto(false)}>Partidos</Link>
+        <div className={`md:hidden ${bgMobile} border-t px-4 py-3 space-y-2`}>
+          {navLinks.map(l => (
+            <Link key={l.href} href={l.href} className={`block ${textMuted} py-2`} onClick={() => setMenuAbierto(false)}>{l.label}</Link>
+          ))}
           {usuario ? (
             <>
-              <Link href="/dashboard" className="block text-red-100 py-2" onClick={() => setMenuAbierto(false)}>Dashboard</Link>
-              <Link href="/mi-perfil" className="block text-red-100 py-2" onClick={() => setMenuAbierto(false)}>Mi perfil</Link>
-              {usuario.tipo === 'JUGADOR' && <Link href="/mis-solicitudes" className="block text-red-100 py-2" onClick={() => setMenuAbierto(false)}>Mis solicitudes</Link>}
-              {usuario.tipo === 'CLUB' && <Link href="/mi-club" className="block text-red-100 py-2" onClick={() => setMenuAbierto(false)}>Mi club</Link>}
-              <Link href="/wallet" className="block text-red-100 py-2" onClick={() => setMenuAbierto(false)}>💰 Mi billetera</Link>
-              <button onClick={cerrarSesion} className="block text-red-200 py-2">Cerrar sesión</button>
+              <Link href="/dashboard" className={`block ${textMuted} py-2`} onClick={() => setMenuAbierto(false)}>Dashboard</Link>
+              <Link href="/mi-perfil" className={`block ${textMuted} py-2`} onClick={() => setMenuAbierto(false)}>Mi perfil</Link>
+              {usuario.tipo === 'JUGADOR' && <Link href="/mis-solicitudes" className={`block ${textMuted} py-2`} onClick={() => setMenuAbierto(false)}>Mis solicitudes</Link>}
+              {usuario.tipo === 'CLUB' && <Link href="/mi-club" className={`block ${textMuted} py-2`} onClick={() => setMenuAbierto(false)}>Mi club</Link>}
+              <Link href="/wallet" className={`block ${textMuted} py-2`} onClick={() => setMenuAbierto(false)}>💰 Mi billetera</Link>
+              <button onClick={cerrarSesion} className="block text-white/70 py-2">Cerrar sesión</button>
             </>
           ) : (
             <>
-              <Link href="/login" className="block text-red-100 py-2" onClick={() => setMenuAbierto(false)}>Ingresar</Link>
+              <Link href="/login" className={`block ${textMuted} py-2`} onClick={() => setMenuAbierto(false)}>Ingresar</Link>
               <Link href="/registro" className="block text-white font-semibold py-2" onClick={() => setMenuAbierto(false)}>Registrarse</Link>
             </>
           )}

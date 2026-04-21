@@ -11,7 +11,10 @@ export async function GET(request: Request) {
 
   const verificado = searchParams.get('verificado')
 
+  const deporte = searchParams.get('deporte')
+
   const where: Record<string, unknown> = {}
+  if (deporte) where.deporte = deporte
   if (posicion) where.posicion = posicion
   if (distrito) where.distrito = { contains: distrito }
   if (precioMax) where.precio = { lte: parseFloat(precioMax) }

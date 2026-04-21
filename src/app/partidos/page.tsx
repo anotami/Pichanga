@@ -23,7 +23,7 @@ function PartidosContent() {
 
   useEffect(() => {
     setLoading(true)
-    const params = new URLSearchParams({ status: 'ABIERTO' })
+    const params = new URLSearchParams({ status: 'ABIERTO', deporte: 'FUTBOL' })
     if (posicion) params.set('posicion', posicion)
     if (distrito) params.set('distrito', distrito)
     if (modalidad) params.set('modalidad', modalidad)

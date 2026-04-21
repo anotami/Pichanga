@@ -8,10 +8,12 @@ export async function GET(request: Request) {
   const modalidad = searchParams.get('modalidad')
   const posicion = searchParams.get('posicion')
   const status = searchParams.get('status') ?? 'ABIERTO'
+  const deporte = searchParams.get('deporte')
 
   const partidos = await prisma.partido.findMany({
     where: {
       status,
+      ...(deporte ? { deporte } : {}),
       ...(distrito ? { distrito: { contains: distrito } } : {}),
       ...(modalidad ? { modalidad } : {})
     },
@@ -41,7 +43,7 @@ export async function POST(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
 
   const body = await request.json()
-  const { titulo, descripcion, distrito, direccion, fecha, duracion, modalidad, posiciones, presupuestoMax, clubId, nivelRequerido, tipoPago, cuotaCosto, pagoJugador } = body
+  const { titulo, descripcion, distrito, direccion, fecha, duracion, modalidad, posiciones, presupuestoMax, clubId, nivelRequerido, tipoPago, cuotaCosto, pagoJugador, deporte } = body
 
   if (!titulo || !distrito || !fecha || !modalidad || !posiciones) {
     return NextResponse.json({ error: 'Campos requeridos faltantes' }, { status: 400 })
@@ -51,6 +53,7 @@ export async function POST(request: Request) {
     data: {
       organizadorId: payload.userId,
       clubId: clubId || null,
+      deporte: deporte ?? 'FUTBOL',
       titulo, descripcion, distrito, direccion,
       fecha: new Date(fecha),
       duracion: parseInt(duracion),
