@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
 import MatchCard from '@/components/MatchCard'
 import { Partido } from '@/types'
@@ -34,15 +35,32 @@ function PartidosContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Partidos buscando jugadores</h1>
-          <p className="text-gray-500">Aplica, negocia tu precio y juega</p>
+      {/* Banner */}
+      <div className="relative rounded-2xl overflow-hidden mb-10 h-44 md:h-56">
+        <Image
+          src="https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=1400&q=80"
+          alt="Cancha de fútbol"
+          fill className="object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-950/90 via-gray-900/60 to-transparent" />
+        <div className="absolute inset-0 flex items-center justify-between px-8">
+          <div className="text-white">
+            <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-1">⚽ Encuentra tu partido</p>
+            <h1 className="text-3xl md:text-4xl font-extrabold mb-2">Partidos disponibles</h1>
+            <p className="text-gray-300 text-sm md:text-base">Aplica, negocia tu precio y juega</p>
+          </div>
+          {usuarioId && (
+            <Link href="/partidos/crear" className="bg-red-600 text-white font-bold px-5 py-3 rounded-xl hover:bg-red-700 transition shadow-lg hidden sm:block whitespace-nowrap">
+              + Publicar partido
+            </Link>
+          )}
         </div>
-        {usuarioId && (
-          <Link href="/partidos/crear" className="btn-primary hidden sm:block">+ Publicar partido</Link>
-        )}
       </div>
+      {usuarioId && (
+        <div className="sm:hidden mb-4">
+          <Link href="/partidos/crear" className="btn-primary w-full text-center block">+ Publicar partido</Link>
+        </div>
+      )}
 
       <div className="card mb-8">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -75,12 +93,6 @@ function PartidosContent() {
           </button>
         )}
       </div>
-
-      {usuarioId && (
-        <div className="sm:hidden mb-4">
-          <Link href="/partidos/crear" className="btn-primary w-full text-center block">+ Publicar partido</Link>
-        </div>
-      )}
 
       {loading ? (
         <div className="text-center py-20 text-gray-400">

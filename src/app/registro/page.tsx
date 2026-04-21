@@ -1,6 +1,7 @@
 'use client'
 import { useState, Suspense } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { DISTRITOS, POSICIONES } from '@/lib/constants'
 
@@ -72,15 +73,46 @@ function RegistroForm() {
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex">
+      {/* Imagen lateral */}
+      <div className="hidden lg:block lg:w-2/5 relative flex-shrink-0">
+        <Image
+          src="https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?auto=format&fit=crop&w=900&q=80"
+          alt="Jugadores de fútbol"
+          fill
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-red-900/90 to-red-600/75" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-10 text-white text-center">
+          <div className="text-5xl mb-5">🇵🇪</div>
+          <h2 className="text-2xl font-extrabold mb-3 leading-tight">Únete a la<br/>comunidad</h2>
+          <p className="text-red-200 text-sm max-w-xs leading-relaxed">
+            Miles de jugadores ya encuentran su próximo partido en Pichanga Peru.
+          </p>
+          <div className="mt-8 space-y-3 text-left w-full max-w-xs">
+            {['Publica o aplica a partidos', 'Cobra por jugar', 'Sube tu reputación', 'Chat con el organizador'].map(t => (
+              <div key={t} className="flex items-center gap-2 text-sm text-white/90">
+                <span className="text-green-400 font-bold">✓</span> {t}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Formulario */}
+      <div className="flex-1 flex items-start justify-center px-6 py-10 bg-gray-50 overflow-y-auto">
       <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <span className="text-5xl">⚽</span>
-          <h1 className="text-2xl font-bold text-gray-900 mt-3">Crear cuenta</h1>
+        <div className="text-center mb-6">
+          <Link href="/" className="inline-flex items-center gap-2 mb-4">
+            <span className="text-2xl">⚽</span>
+            <span className="text-lg font-bold text-gray-900">Pichanga</span>
+            <span className="text-xs text-red-500 font-semibold bg-red-50 px-2 py-0.5 rounded-full">Perú</span>
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-900">Crear cuenta</h1>
           <p className="text-gray-500 mt-1">Únete a la comunidad Pichanga Peru</p>
         </div>
 
-        <div className="card">
+        <div className="card shadow-lg">
           <div className="mb-6">
             <p className="label">¿Cómo quieres registrarte?</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -169,8 +201,8 @@ function RegistroForm() {
               <p className="text-xs text-gray-400 mt-1">Tu amigo gana 50 puntos si usas su código</p>
             </div>
 
-            <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'Creando cuenta...' : 'Crear cuenta gratis'}
+            <button type="submit" className="btn-primary w-full py-3 text-base" disabled={loading}>
+              {loading ? 'Creando cuenta...' : 'Crear cuenta gratis →'}
             </button>
           </form>
           <p className="text-center text-sm text-gray-500 mt-4">
@@ -178,6 +210,7 @@ function RegistroForm() {
             <Link href="/login" className="text-red-600 font-semibold hover:text-red-700">Ingresar</Link>
           </p>
         </div>
+      </div>
       </div>
     </div>
   )

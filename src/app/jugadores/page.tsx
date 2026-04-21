@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import PlayerCard from '@/components/PlayerCard'
 import { JugadorPerfil } from '@/types'
 import { POSICIONES, DISTRITOS, NIVELES } from '@/lib/constants'
@@ -44,9 +45,21 @@ function JugadoresContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Buscar jugadores</h1>
-        <p className="text-gray-500">Encuentra al jugador ideal para completar tu partido</p>
+      {/* Banner */}
+      <div className="relative rounded-2xl overflow-hidden mb-10 h-44 md:h-56">
+        <Image
+          src="https://images.unsplash.com/photo-1543326727-cf6c39e8f84c?auto=format&fit=crop&w=1400&q=80"
+          alt="Jugadores de fútbol"
+          fill className="object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-950/90 via-gray-900/60 to-transparent" />
+        <div className="absolute inset-0 flex items-center px-8">
+          <div className="text-white">
+            <p className="text-red-400 text-xs font-bold uppercase tracking-widest mb-1">🇵🇪 Pichanga Peru</p>
+            <h1 className="text-3xl md:text-4xl font-extrabold mb-2">Buscar jugadores</h1>
+            <p className="text-gray-300 text-sm md:text-base">Encuentra al jugador ideal para completar tu partido</p>
+          </div>
+        </div>
       </div>
 
       <div className="card mb-8">
