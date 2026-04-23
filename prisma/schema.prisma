@@ -212,6 +212,27 @@ model ResenaPartido {
   @@unique([partidoId, autorId])
 }
 
+model Cancha {
+  id              String   @id @default(cuid())
+  nombre          String
+  deporte         String   // "FUTBOL" | "PADEL" | "AMBOS"
+  distrito        String
+  direccion       String
+  telefono        String?
+  whatsapp        String?
+  precio          Float?   // precio por hora en soles
+  superficie      String?  // "SINTETICO" | "CESPED_NATURAL" | "CEMENTO" | "INDOOR"
+  tamano          String?  // "5VS5" | "7VS7" | "11VS11" | "PADEL"
+  techada         Boolean  @default(false)
+  iluminacion     Boolean  @default(true)
+  vestuarios      Boolean  @default(false)
+  estacionamiento Boolean  @default(false)
+  disponible      Boolean  @default(true)
+  foto            String?
+  descripcion     String?
+  createdAt       DateTime @default(now())
+}
+
 model Notificacion {
   id        String   @id @default(cuid())
   usuarioId String

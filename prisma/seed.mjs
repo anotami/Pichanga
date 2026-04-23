@@ -252,10 +252,27 @@ async function seedPartidos() {
   console.log(`  ✓ 25 partidos de fútbol + 10 de pádel`)
 }
 
+async function seedCanchas() {
+  const existing = await prisma.cancha.count()
+  if (existing > 0) { console.log(`✓ ${existing} canchas ya existen`); return }
+
+  console.log('Sembrando canchas de Lima...')
+  const { CANCHAS_FUTBOL, CANCHAS_PADEL } = await import('./canchas-data.mjs')
+  const todas = [
+    ...CANCHAS_FUTBOL.map(c => ({ ...c, deporte: 'FUTBOL', disponible: true })),
+    ...CANCHAS_PADEL.map(c => ({ ...c, deporte: 'PADEL', disponible: true })),
+  ]
+  for (const c of todas) {
+    await prisma.cancha.create({ data: c })
+  }
+  console.log(`  ✓ ${CANCHAS_FUTBOL.length} canchas de fútbol + ${CANCHAS_PADEL.length} canchas de pádel`)
+}
+
 async function main() {
   console.log('🌱 Iniciando seed de producción...')
   await seedNPCs()
   await seedPartidos()
+  await seedCanchas()
   console.log('✅ Seed completo')
 }
 

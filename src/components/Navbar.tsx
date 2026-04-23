@@ -63,8 +63,8 @@ export default function Navbar() {
 
   const logoHref = esPadel ? '/dejada' : pathname === '/' ? '/' : '/pichanga'
   const navLinks = esPadel
-    ? [{ href: '/dejada/jugadores', label: 'Jugadores' }, { href: '/dejada/partidos', label: 'Partidos' }]
-    : [{ href: '/jugadores', label: 'Jugadores' }, { href: '/partidos', label: 'Partidos' }]
+    ? [{ href: '/dejada/jugadores', label: 'Jugadores' }, { href: '/dejada/partidos', label: 'Partidos' }, { href: '/dejada/canchas', label: 'Canchas' }]
+    : [{ href: '/jugadores', label: 'Jugadores' }, { href: '/partidos', label: 'Partidos' }, { href: '/canchas', label: 'Canchas' }]
 
   return (
     <nav className={`${bgNav} shadow-lg sticky top-0 z-50`}>

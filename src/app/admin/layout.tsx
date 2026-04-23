@@ -9,6 +9,7 @@ const NAV = [
   { href: '/admin/partidos', label: 'Partidos', emoji: '⚽' },
   { href: '/admin/strikes', label: 'Strikes & Baneos', emoji: '🚨' },
   { href: '/admin/transacciones', label: 'Transacciones', emoji: '💰' },
+  { href: '/admin/canchas', label: 'Canchas', emoji: '🏟️' },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
