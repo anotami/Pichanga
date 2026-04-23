@@ -233,6 +233,12 @@ model Cancha {
   createdAt       DateTime @default(now())
 }
 
+model Visita {
+  id        String   @id @default(cuid())
+  pagina    String
+  createdAt DateTime @default(now())
+}
+
 model Notificacion {
   id        String   @id @default(cuid())
   usuarioId String

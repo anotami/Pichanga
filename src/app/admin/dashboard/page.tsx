@@ -14,6 +14,11 @@ interface Stats {
   registrosRecientes: Array<{ id: string; nombre: string; tipo: string; createdAt: string }>
 }
 
+interface VisitasStats {
+  total: number; hoy: number; semana: number; mes: number
+  porPagina: Array<{ pagina: string; _count: { pagina: number } }>
+}
+
 function NPCPanel() {
   const [npcCount, setNpcCount] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
@@ -170,14 +175,18 @@ function PartidosPanel() {
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
+  const [visitas, setVisitas] = useState<VisitasStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken')
-    fetch('/api/admin/stats', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(j => setStats(j.data))
-      .finally(() => setLoading(false))
+    Promise.all([
+      fetch('/api/admin/stats', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch('/api/visitas', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+    ]).then(([statsJ, visitasJ]) => {
+      setStats(statsJ.data)
+      setVisitas(visitasJ.data)
+    }).finally(() => setLoading(false))
   }, [])
 
   if (loading) return <div className="text-white text-center py-20 text-2xl animate-pulse">⚽ Cargando...</div>
@@ -195,6 +204,44 @@ export default function AdminDashboardPage() {
       </div>
       <NPCPanel />
       <PartidosPanel />
+
+      {/* Visitas */}
+      {visitas && (
+        <div className="bg-gray-800 rounded-2xl p-5 border border-cyan-800/50 mb-6">
+          <h3 className="text-white font-semibold mb-4">👁️ Contador de visitas</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+            {[
+              { label: 'Hoy', value: visitas.hoy, color: 'text-cyan-400' },
+              { label: 'Últimos 7 días', value: visitas.semana, color: 'text-blue-400' },
+              { label: 'Último mes', value: visitas.mes, color: 'text-indigo-400' },
+              { label: 'Total histórico', value: visitas.total, color: 'text-purple-400' },
+            ].map(k => (
+              <div key={k.label} className="bg-gray-700/50 rounded-xl p-3 text-center">
+                <p className={`text-2xl font-bold ${k.color}`}>{k.value.toLocaleString('es-PE')}</p>
+                <p className="text-gray-400 text-xs mt-1">{k.label}</p>
+              </div>
+            ))}
+          </div>
+          {visitas.porPagina.length > 0 && (
+            <div>
+              <p className="text-gray-400 text-xs font-medium uppercase tracking-wide mb-2">Páginas más visitadas</p>
+              <div className="space-y-1.5">
+                {visitas.porPagina.map((p, i) => (
+                  <div key={p.pagina} className="flex items-center gap-3 text-sm">
+                    <span className="text-gray-600 w-4 text-right">{i + 1}</span>
+                    <span className="text-gray-300 flex-1 truncate font-mono text-xs">{p.pagina}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 bg-cyan-600 rounded-full"
+                        style={{ width: `${Math.round((p._count.pagina / visitas.porPagina[0]._count.pagina) * 80)}px` }} />
+                      <span className="text-white font-semibold text-xs w-8 text-right">{p._count.pagina}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* KPIs principales */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
