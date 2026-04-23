@@ -33,6 +33,7 @@ model Usuario {
   wallet            Wallet?
   notificaciones    Notificacion[]
   resenasPartido    ResenaPartido[] @relation("resenaPartidoAutor")
+  favoritos         Favorito[]
 }
 
 model JugadorPerfil {
@@ -62,6 +63,7 @@ model JugadorPerfil {
   verificado         Boolean  @default(false)
   esNPC              Boolean  @default(false)
   createdAt          DateTime @default(now())
+  favoritos          Favorito[]
 }
 
 model Club {
@@ -231,6 +233,17 @@ model Cancha {
   foto            String?
   descripcion     String?
   createdAt       DateTime @default(now())
+}
+
+model Favorito {
+  id        String        @id @default(cuid())
+  usuarioId String
+  usuario   Usuario       @relation(fields: [usuarioId], references: [id])
+  perfilId  String
+  perfil    JugadorPerfil @relation(fields: [perfilId], references: [id])
+  createdAt DateTime      @default(now())
+
+  @@unique([usuarioId, perfilId])
 }
 
 model Visita {
