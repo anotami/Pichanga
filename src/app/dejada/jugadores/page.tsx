@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { JugadorPerfil } from '@/types'
-import { POSICIONES_PADEL, NIVELES_PADEL, DISTRITOS, getRango, formatPrecio } from '@/lib/constants'
+import { POSICIONES_PADEL, NIVELES_PADEL, DISTRITOS, getRango, getProgresoRango, formatPrecio } from '@/lib/constants'
 
 const MEDALLAS = ['🥇', '🥈', '🥉']
 
@@ -252,6 +252,7 @@ function JugadoresPadelContent() {
               const pos = POSICIONES_PADEL.find(p => p.value === j.posicion)
               const niv = NIVELES_PADEL.find(n => n.value === (j as unknown as { nivel: string }).nivel)
               const rango = getRango(j.puntos)
+              const progreso = getProgresoRango(j.puntos)
               return (
                 <div key={j.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition overflow-hidden">
                   <div className="bg-gradient-to-br from-green-50 to-green-100 px-6 pt-6 pb-4 text-center relative">
@@ -282,7 +283,16 @@ function JugadoresPadelContent() {
                         ))}
                         <span className="text-sm text-gray-500 ml-1">({j.totalResenas})</span>
                       </div>
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${rango.bg} ${rango.color}`}>{rango.nombre}</span>
+                      <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border ${rango.bg} ${rango.color} ${rango.border}`}>
+                        {rango.icon} {rango.nombre}
+                      </span>
+                    </div>
+                    {/* Mini barra de progreso */}
+                    <div className="space-y-1">
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full bg-gradient-to-r ${rango.gradient}`} style={{ width: `${progreso.porcentaje}%` }} />
+                      </div>
+                      <p className="text-xs text-gray-400 text-right">{j.puntos} pts</p>
                     </div>
                     <div className="flex items-center justify-between pt-1">
                       <div>

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { JugadorPerfil, Resena } from '@/types'
 import { getPosicion, formatPrecio, getRango, formatFecha, DIAS_SEMANA } from '@/lib/constants'
+import GamificationCard from '@/components/GamificationCard'
 
 interface PerfilConResenas extends JugadorPerfil { resenas: Resena[] }
 
@@ -64,17 +65,20 @@ export default function JugadorDetallePage() {
                 ✓ Verificado
               </span>
             )}
-            <div className="mt-3 space-y-2">
+            <div className="mt-3">
               <span className={`inline-flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-full border ${pos?.bg} ${pos?.text} ${pos?.border}`}>
                 {pos?.emoji} {pos?.label}
               </span>
-              <div>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${rango.bg} ${rango.color}`}>
-                  {rango.nombre} · {perfil.puntos} puntos
-                </span>
-              </div>
             </div>
           </div>
+
+          <GamificationCard
+            puntos={perfil.puntos}
+            totalPartidos={perfil.totalPartidos}
+            rating={perfil.rating}
+            totalResenas={perfil.totalResenas}
+            verificado={perfil.verificado}
+          />
 
           <div className="card space-y-3">
             <h3 className="font-semibold text-gray-900">Información</h3>

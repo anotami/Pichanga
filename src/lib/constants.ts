@@ -62,14 +62,43 @@ export const DIAS_BANEO_SEGUNDO_NO_SHOW = 30
 export const PUNTOS_POR_RATING: Record<number, number> = { 5: 10, 4: 5, 3: 3, 2: 1, 1: 0 }
 
 export const RANGOS = [
-  { nombre: 'Rookie', min: 0, color: 'text-gray-600', bg: 'bg-gray-100' },
-  { nombre: 'Amateur', min: 100, color: 'text-green-700', bg: 'bg-green-100' },
-  { nombre: 'Profesional', min: 300, color: 'text-blue-700', bg: 'bg-blue-100' },
-  { nombre: 'Elite', min: 600, color: 'text-amber-700', bg: 'bg-amber-100' },
+  { nombre: 'Rookie',   min: 0,    icon: '🌱', color: 'text-gray-600',   bg: 'bg-gray-100',    border: 'border-gray-300',   gradient: 'from-gray-400 to-gray-500' },
+  { nombre: 'Bronce',   min: 50,   icon: '🥉', color: 'text-amber-800',  bg: 'bg-amber-100',   border: 'border-amber-300',  gradient: 'from-amber-500 to-amber-700' },
+  { nombre: 'Plata',    min: 200,  icon: '🥈', color: 'text-slate-700',  bg: 'bg-slate-100',   border: 'border-slate-300',  gradient: 'from-slate-400 to-slate-600' },
+  { nombre: 'Oro',      min: 500,  icon: '🥇', color: 'text-yellow-700', bg: 'bg-yellow-100',  border: 'border-yellow-400', gradient: 'from-yellow-400 to-yellow-600' },
+  { nombre: 'Platino',  min: 1000, icon: '💎', color: 'text-cyan-700',   bg: 'bg-cyan-50',     border: 'border-cyan-400',   gradient: 'from-cyan-400 to-cyan-600' },
+  { nombre: 'Leyenda',  min: 2000, icon: '👑', color: 'text-purple-700', bg: 'bg-purple-100',  border: 'border-purple-400', gradient: 'from-purple-500 to-purple-700' },
 ]
 
 export function getRango(puntos: number) {
   return [...RANGOS].reverse().find(r => puntos >= r.min) ?? RANGOS[0]
+}
+
+export function getProgresoRango(puntos: number) {
+  const idx = [...RANGOS].reverse().findIndex(r => puntos >= r.min)
+  const rangoActual = [...RANGOS].reverse()[idx]
+  const rangoIdx = RANGOS.indexOf(rangoActual)
+  if (rangoIdx === RANGOS.length - 1) return { porcentaje: 100, puntosNecesarios: 0, siguiente: null }
+  const siguiente = RANGOS[rangoIdx + 1]
+  const rango_min = rangoActual.min
+  const siguiente_min = siguiente.min
+  const porcentaje = Math.min(Math.round(((puntos - rango_min) / (siguiente_min - rango_min)) * 100), 99)
+  return { porcentaje, puntosNecesarios: siguiente_min - puntos, siguiente }
+}
+
+export interface Insignia { id: string; emoji: string; nombre: string; descripcion: string; ganada: boolean }
+
+export function getInsignias(p: { totalPartidos: number; rating: number; totalResenas: number; verificado: boolean }): Insignia[] {
+  return [
+    { id: 'debut',        emoji: '🎮', nombre: 'Debut',        descripcion: 'Jugaste tu primer partido',  ganada: p.totalPartidos >= 1  },
+    { id: 'racha',        emoji: '🔥', nombre: 'En racha',     descripcion: '5 o más partidos jugados',   ganada: p.totalPartidos >= 5  },
+    { id: 'veterano',     emoji: '⚽', nombre: 'Veterano',     descripcion: '20 partidos completados',    ganada: p.totalPartidos >= 20 },
+    { id: 'centenario',   emoji: '💯', nombre: 'Centenario',   descripcion: '50 partidos completados',    ganada: p.totalPartidos >= 50 },
+    { id: 'bien-valorado',emoji: '⭐', nombre: 'Bien valorado',descripcion: 'Rating promedio 4.5+',       ganada: p.rating >= 4.5       },
+    { id: 'top-player',   emoji: '🌟', nombre: 'Top player',   descripcion: 'Rating promedio 4.8+',       ganada: p.rating >= 4.8       },
+    { id: 'popular',      emoji: '❤️', nombre: 'Popular',      descripcion: '10 o más reseñas recibidas', ganada: p.totalResenas >= 10  },
+    { id: 'verificado',   emoji: '✅', nombre: 'Verificado',   descripcion: 'Identidad verificada',       ganada: p.verificado          },
+  ]
 }
 
 export function getPosicion(value: string) {

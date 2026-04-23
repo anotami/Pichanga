@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { JugadorPerfil } from '@/types'
-import { getPosicion, getNivel, formatPrecio, getRango } from '@/lib/constants'
+import { getPosicion, getNivel, formatPrecio, getRango, getProgresoRango } from '@/lib/constants'
 
 interface Props { perfil: JugadorPerfil; showActions?: boolean }
 
@@ -8,6 +8,7 @@ export default function PlayerCard({ perfil, showActions = true }: Props) {
   const pos = getPosicion(perfil.posicion)
   const niv = getNivel((perfil as unknown as { nivel: string }).nivel ?? 'AMATEUR')
   const rango = getRango(perfil.puntos)
+  const progreso = getProgresoRango(perfil.puntos)
   const esBaneado = (perfil as unknown as { usuario?: { baneoHasta?: string } }).usuario?.baneoHasta
     && new Date((perfil as unknown as { usuario: { baneoHasta: string } }).usuario.baneoHasta) > new Date()
 
@@ -56,7 +57,17 @@ export default function PlayerCard({ perfil, showActions = true }: Props) {
             ))}
             <span className="text-sm text-gray-500 ml-1">({perfil.totalResenas})</span>
           </div>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${rango.bg} ${rango.color}`}>{rango.nombre}</span>
+          <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border ${rango.bg} ${rango.color} ${rango.border}`}>
+            {rango.icon} {rango.nombre}
+          </span>
+        </div>
+
+        {/* Mini barra de progreso */}
+        <div className="space-y-1">
+          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full bg-gradient-to-r ${rango.gradient}`} style={{ width: `${progreso.porcentaje}%` }} />
+          </div>
+          <p className="text-xs text-gray-400 text-right">{perfil.puntos} pts · {rango.icon} {rango.nombre}</p>
         </div>
 
         <div className="flex items-center justify-between pt-1">
