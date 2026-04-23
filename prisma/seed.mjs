@@ -109,8 +109,9 @@ function genRating() {
   return 5.0
 }
 function calcPuntos(totalPartidos, rating) {
-  const ptsPerGame = rating >= 4.8 ? 10 : rating >= 4.5 ? 8 : rating >= 4.0 ? 5 : rating >= 3.5 ? 3 : 1
-  return Math.round(totalPartidos * ptsPerGame * (0.8 + Math.random() * 0.4))
+  const ptsPerGame = rating >= 4.8 ? 15 : rating >= 4.5 ? 10 : rating >= 4.0 ? 6 : rating >= 3.5 ? 3 : 1
+  const activityBonus = totalPartidos >= 100 ? 1.5 : totalPartidos >= 50 ? 1.2 : totalPartidos >= 20 ? 1.0 : 0.8
+  return Math.round(totalPartidos * ptsPerGame * activityBonus * (0.85 + Math.random() * 0.30))
 }
 function genDisponibilidad() {
   const dias = ['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO','DOMINGO']
@@ -144,7 +145,7 @@ async function seedNPCs() {
   const futbolPlayers = posicionesFutbol.map((posicion, i) => {
     const nivel = nivelesFutbol(posicion)
     const [pMin, pMax] = precioFutbol[posicion][nivel]
-    const totalPartidos = nivel === 'COMPETITIVO' ? rndInt(50,150) : nivel === 'INTERMEDIO' ? rndInt(20,80) : rndInt(3,45)
+    const totalPartidos = nivel === 'COMPETITIVO' ? rndInt(60,220) : nivel === 'INTERMEDIO' ? rndInt(20,80) : rndInt(3,45)
     const rating = genRating()
     return {
       email: `npc.f${String(i+1).padStart(4,'0')}@pichanga.pe`,
@@ -183,7 +184,7 @@ async function seedNPCs() {
     const nivel = weightedPick([{value:'PRINCIPIANTE',weight:35},{value:'INTERMEDIO',weight:38},{value:'AVANZADO',weight:20},{value:'COMPETIDOR',weight:7}])
     const precioP = { PRINCIPIANTE:[20,40], INTERMEDIO:[35,70], AVANZADO:[65,120], COMPETIDOR:[100,200] }
     const [pMin,pMax] = precioP[nivel]
-    const totalPartidos = nivel==='COMPETIDOR' ? rndInt(40,120) : nivel==='AVANZADO' ? rndInt(20,70) : nivel==='INTERMEDIO' ? rndInt(10,50) : rndInt(2,25)
+    const totalPartidos = nivel==='COMPETIDOR' ? rndInt(60,160) : nivel==='AVANZADO' ? rndInt(20,70) : nivel==='INTERMEDIO' ? rndInt(10,50) : rndInt(2,25)
     const rating = genRating()
     return {
       email: `npc.p${String(i+1).padStart(3,'0')}@dejada.pe`,
@@ -252,6 +253,32 @@ async function seedPartidos() {
   console.log(`  ✓ 25 partidos de fútbol + 10 de pádel`)
 }
 
+async function seedRecalibrarPuntos() {
+  const maxPuntos = await prisma.jugadorPerfil.aggregate({ where: { esNPC: true }, _max: { puntos: true } })
+  if ((maxPuntos._max.puntos ?? 0) >= 2000) {
+    console.log(`✓ Puntos NPC ya calibrados (máx: ${maxPuntos._max.puntos})`)
+    return
+  }
+
+  const npcs = await prisma.jugadorPerfil.findMany({
+    where: { esNPC: true },
+    select: { id: true, totalPartidos: true, rating: true },
+  })
+  if (npcs.length === 0) return
+
+  console.log(`Recalibrando puntos de ${npcs.length} NPCs...`)
+  const BATCH = 50
+  for (let i = 0; i < npcs.length; i += BATCH) {
+    await Promise.all(npcs.slice(i, i + BATCH).map(npc => {
+      const ptsPerGame = npc.rating >= 4.8 ? 15 : npc.rating >= 4.5 ? 10 : npc.rating >= 4.0 ? 6 : npc.rating >= 3.5 ? 3 : 1
+      const activityBonus = npc.totalPartidos >= 100 ? 1.5 : npc.totalPartidos >= 50 ? 1.2 : npc.totalPartidos >= 20 ? 1.0 : 0.8
+      const puntos = Math.round(npc.totalPartidos * ptsPerGame * activityBonus)
+      return prisma.jugadorPerfil.update({ where: { id: npc.id }, data: { puntos } })
+    }))
+  }
+  console.log(`  ✓ Puntos recalibrados (6 niveles: Rookie → Leyenda)`)
+}
+
 async function seedCanchas() {
   const existing = await prisma.cancha.count()
   if (existing > 0) { console.log(`✓ ${existing} canchas ya existen`); return }
@@ -271,6 +298,7 @@ async function seedCanchas() {
 async function main() {
   console.log('🌱 Iniciando seed de producción...')
   await seedNPCs()
+  await seedRecalibrarPuntos()
   await seedPartidos()
   await seedCanchas()
   console.log('✅ Seed completo')
