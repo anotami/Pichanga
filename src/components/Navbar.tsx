@@ -138,6 +138,7 @@ export default function Navbar() {
                       {usuario.tipo === 'JUGADOR' && <Link href="/mis-solicitudes" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setMenuAbierto(false)}>Mis solicitudes</Link>}
                       {usuario.tipo === 'CLUB' && <Link href="/mi-club" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setMenuAbierto(false)}>Mi club</Link>}
                       <Link href="/wallet" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setMenuAbierto(false)}>💰 Mi billetera</Link>
+                      <Link href="/referidos" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50" onClick={() => setMenuAbierto(false)}>🎁 Referidos</Link>
                       <hr className="my-1" />
                       <button onClick={cerrarSesion} className={`block w-full text-left px-4 py-2 text-sm ${esPadel ? 'text-green-700 hover:bg-green-50' : 'text-red-600 hover:bg-red-50'}`}>Cerrar sesión</button>
                     </div>
@@ -173,6 +174,7 @@ export default function Navbar() {
               {usuario.tipo === 'JUGADOR' && <Link href="/mis-solicitudes" className={`block ${textMuted} py-2`} onClick={() => setMenuAbierto(false)}>Mis solicitudes</Link>}
               {usuario.tipo === 'CLUB' && <Link href="/mi-club" className={`block ${textMuted} py-2`} onClick={() => setMenuAbierto(false)}>Mi club</Link>}
               <Link href="/wallet" className={`block ${textMuted} py-2`} onClick={() => setMenuAbierto(false)}>💰 Mi billetera</Link>
+              <Link href="/referidos" className={`block ${textMuted} py-2`} onClick={() => setMenuAbierto(false)}>🎁 Referidos</Link>
               <button onClick={cerrarSesion} className="block text-white/70 py-2">Cerrar sesión</button>
             </>
           ) : (

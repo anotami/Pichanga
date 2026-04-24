@@ -5,14 +5,35 @@ import { useRouter } from 'next/navigation'
 import { formatPrecio, formatFecha, getPosicion, getRango } from '@/lib/constants'
 import GamificationCard from '@/components/GamificationCard'
 
+interface Solicitud {
+  id: string
+  status: string
+  precio: number
+  posicion: string
+  puedeCalificar: boolean
+  yaCalificado: boolean
+  canceladoA?: string
+  penalizado?: boolean
+  partido: {
+    id: string
+    titulo: string
+    fecha: string
+    distrito: string
+    organizadorId: string
+    organizador: { id: string; nombre: string }
+    posiciones: string[]
+  }
+}
+
 interface DashboardData {
   tipo: string
   perfil?: { id: string; puntos: number; rating: number; posicion: string; distrito: string; precio: number; totalPartidos: number; totalResenas: number; verificado: boolean }
   stats: Record<string, number>
-  solicitudes?: Array<{ id: string; status: string; precio: number; posicion: string; partido: { titulo: string; fecha: string; distrito: string } }>
+  solicitudes?: Solicitud[]
   transacciones?: Array<{ id: string; monto: number; neto: number; comision: number; status: string; createdAt: string }>
   resenas?: Array<{ id: string; rating: number; comentario?: string; autor: { nombre: string } }>
   partidos?: Array<{ id: string; titulo: string; status: string; fecha: string; distrito: string; _count: { solicitudes: number }; solicitudes: unknown[] }>
+  referidos?: { lista: Array<{ id: string; nombre: string; createdAt: string }>; total: number; puntos: number; codigoReferido: string }
 }
 
 interface FavPerfil {
@@ -21,12 +42,21 @@ interface FavPerfil {
   usuario: { nombre: string }
 }
 
+interface RatingModal { solicitudId: string; partidoId: string; organizadorNombre: string }
+
 export default function DashboardPage() {
   const router = useRouter()
   const [data, setData] = useState<DashboardData | null>(null)
   const [favoritos, setFavoritos] = useState<FavPerfil[]>([])
   const [loading, setLoading] = useState(true)
   const [nombreUsuario, setNombreUsuario] = useState('')
+  const [ratingModal, setRatingModal] = useState<RatingModal | null>(null)
+  const [ratingValue, setRatingValue] = useState(5)
+  const [ratingComentario, setRatingComentario] = useState('')
+  const [ratingLoading, setRatingLoading] = useState(false)
+  const [cancelConfirm, setCancelConfirm] = useState<string | null>(null)
+  const [cancelLoading, setCancelLoading] = useState(false)
+  const [copiadoRef, setCopiadoRef] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -42,15 +72,112 @@ export default function DashboardPage() {
     }).finally(() => setLoading(false))
   }, [router])
 
+  async function enviarCalificacion() {
+    if (!ratingModal) return
+    setRatingLoading(true)
+    const token = localStorage.getItem('token')
+    const res = await fetch('/api/resenas/organizador', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ partidoId: ratingModal.partidoId, rating: ratingValue, comentario: ratingComentario })
+    })
+    if (res.ok) {
+      setData(prev => prev ? {
+        ...prev,
+        solicitudes: prev.solicitudes?.map(s =>
+          s.partido.id === ratingModal.partidoId ? { ...s, yaCalificado: true, puedeCalificar: false } : s
+        )
+      } : prev)
+      setRatingModal(null)
+      setRatingValue(5)
+      setRatingComentario('')
+    }
+    setRatingLoading(false)
+  }
+
+  async function cancelarSolicitud(solicitudId: string) {
+    setCancelLoading(true)
+    const token = localStorage.getItem('token')
+    const res = await fetch(`/api/solicitudes/${solicitudId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status: 'CANCELADO' })
+    })
+    if (res.ok) {
+      const j = await res.json()
+      setData(prev => prev ? {
+        ...prev,
+        solicitudes: prev.solicitudes?.map(s =>
+          s.id === solicitudId ? { ...s, status: 'CANCELADO', penalizado: j.penalizado } : s
+        )
+      } : prev)
+    }
+    setCancelConfirm(null)
+    setCancelLoading(false)
+  }
+
   if (loading) return <div className="text-center py-20 text-4xl animate-pulse">⚽</div>
   if (!data) return null
 
   const proximos = (data.solicitudes ?? []).filter(s =>
     s.status === 'ACEPTADO' && new Date(s.partido.fecha) > new Date()
   )
+  const paraCaloficar = (data.solicitudes ?? []).filter(s => s.puedeCalificar)
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
+      {/* Rating modal */}
+      {ratingModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-gray-900 mb-1">Calificar organizador</h2>
+            <p className="text-sm text-gray-500 mb-5">{ratingModal.organizadorNombre}</p>
+            <div className="flex items-center justify-center gap-2 mb-5">
+              {[1,2,3,4,5].map(i => (
+                <button key={i} onClick={() => setRatingValue(i)}
+                  className={`text-3xl transition-transform hover:scale-110 ${i <= ratingValue ? 'text-amber-400' : 'text-gray-200'}`}>
+                  ★
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={ratingComentario}
+              onChange={e => setRatingComentario(e.target.value)}
+              placeholder="Comentario opcional..."
+              rows={3}
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-300 mb-4"
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setRatingModal(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium">Cancelar</button>
+              <button onClick={enviarCalificacion} disabled={ratingLoading}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold disabled:opacity-50">
+                {ratingLoading ? 'Enviando...' : 'Enviar calificación'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel confirm modal */}
+      {cancelConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">¿Cancelar participación?</h2>
+            <p className="text-sm text-gray-500 mb-2">
+              Si el partido es en menos de 24 horas, perderás <strong>20 puntos</strong> como penalidad.
+            </p>
+            <p className="text-xs text-gray-400 mb-5">Esta acción no se puede deshacer.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setCancelConfirm(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium">Volver</button>
+              <button onClick={() => cancelarSolicitud(cancelConfirm)} disabled={cancelLoading}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold disabled:opacity-50">
+                {cancelLoading ? 'Cancelando...' : 'Sí, cancelar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Hola, {nombreUsuario.split(' ')[0]} 👋</h1>
@@ -106,7 +233,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Columna izquierda: perfil + gamification */}
+        {/* Columna izquierda: perfil + gamification + referidos */}
         {data.tipo === 'JUGADOR' && data.perfil && (
           <div className="space-y-5">
             <div className="card">
@@ -140,12 +267,69 @@ export default function DashboardPage() {
               totalResenas={data.perfil.totalResenas}
               verificado={data.perfil.verificado ?? false}
             />
+
+            {/* Referidos mini card */}
+            {data.referidos && (
+              <div className="card border border-amber-100 bg-amber-50/30">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="font-semibold text-gray-900 text-sm flex items-center gap-1.5">🎁 Referidos</h2>
+                  <Link href="/referidos" className="text-xs text-red-600 font-medium">Ver todo →</Link>
+                </div>
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">{data.referidos.total}</div>
+                    <div className="text-xs text-gray-500">Referidos</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-amber-500">{data.referidos.puntos}</div>
+                    <div className="text-xs text-gray-500">Puntos</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="flex-1 font-mono text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 truncate text-gray-600">
+                    {data.referidos.codigoReferido}
+                  </span>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(data.referidos!.codigoReferido); setCopiadoRef(true); setTimeout(() => setCopiadoRef(false), 1500) }}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${copiadoRef ? 'bg-green-100 text-green-700' : 'bg-red-600 text-white'}`}
+                  >
+                    {copiadoRef ? '✓' : 'Copiar'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Columna derecha: solicitudes + próximos */}
+        {/* Columna derecha: solicitudes + próximos + calificaciones pendientes */}
         {data.tipo === 'JUGADOR' && data.solicitudes && (
           <div className="lg:col-span-2 space-y-5">
+            {/* Pendientes de calificación */}
+            {paraCaloficar.length > 0 && (
+              <div className="card border-l-4 border-amber-400">
+                <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse inline-block"></span>
+                  Calificá al organizador
+                </h2>
+                <div className="space-y-2">
+                  {paraCaloficar.map(s => (
+                    <div key={s.id} className="flex items-center justify-between bg-amber-50 rounded-xl px-4 py-3">
+                      <div>
+                        <p className="font-medium text-sm text-gray-900">{s.partido.titulo}</p>
+                        <p className="text-xs text-gray-500">por {s.partido.organizador.nombre} · {formatFecha(s.partido.fecha)}</p>
+                      </div>
+                      <button
+                        onClick={() => setRatingModal({ solicitudId: s.id, partidoId: s.partido.id, organizadorNombre: s.partido.organizador.nombre })}
+                        className="px-3 py-1.5 bg-amber-500 text-white text-xs font-semibold rounded-lg hover:bg-amber-600 transition"
+                      >
+                        ★ Calificar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Próximos partidos aceptados */}
             {proximos.length > 0 && (
               <div className="card border-l-4 border-green-500">
@@ -162,9 +346,15 @@ export default function DashboardPage() {
                           <p className="font-medium text-sm text-gray-900">{s.partido.titulo}</p>
                           <p className="text-xs text-gray-500 mt-0.5">{s.partido.distrito} · {formatFecha(s.partido.fecha)}</p>
                         </div>
-                        <div className="flex items-center gap-2 text-right">
+                        <div className="flex items-center gap-2">
                           {pos && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${pos.bg} ${pos.text}`}>{pos.emoji}</span>}
                           <span className="text-sm font-bold text-green-700">{formatPrecio(s.precio)}</span>
+                          <button
+                            onClick={() => setCancelConfirm(s.id)}
+                            className="text-xs text-red-400 hover:text-red-600 underline transition"
+                          >
+                            Cancelar
+                          </button>
                         </div>
                       </div>
                     )
@@ -191,11 +381,15 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-2 mt-1">
                           {(() => { const pos = getPosicion(s.posicion); return pos ? <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${pos.bg} ${pos.text}`}>{pos.label}</span> : null })()}
                           <span className="text-xs font-semibold text-gray-700">{formatPrecio(s.precio)}</span>
+                          {s.penalizado && <span className="text-xs text-red-500 font-medium">-20 pts penalidad</span>}
                         </div>
                       </div>
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${s.status === 'ACEPTADO' ? 'bg-green-100 text-green-700' : s.status === 'RECHAZADO' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                        {s.status}
-                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${s.status === 'ACEPTADO' ? 'bg-green-100 text-green-700' : s.status === 'RECHAZADO' ? 'bg-red-100 text-red-700' : s.status === 'CANCELADO' ? 'bg-gray-100 text-gray-500' : 'bg-amber-100 text-amber-700'}`}>
+                          {s.status}
+                        </span>
+                        {s.yaCalificado && <span className="text-xs text-gray-400">★ Calificado</span>}
+                      </div>
                     </div>
                   ))}
                 </div>

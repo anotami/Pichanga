@@ -34,6 +34,8 @@ model Usuario {
   notificaciones    Notificacion[]
   resenasPartido    ResenaPartido[] @relation("resenaPartidoAutor")
   favoritos         Favorito[]
+  resenasOrgRecibidas  ResenaOrganizador[] @relation("orgResenasRecibidas")
+  resenasOrgEscritas   ResenaOrganizador[] @relation("orgResenasEscritas")
 }
 
 model JugadorPerfil {
@@ -109,6 +111,7 @@ model Partido {
   mensajes         Mensaje[]
   alertaDestacada  AlertaDestacada?
   resenasPartido   ResenaPartido[]
+  resenasOrganizador ResenaOrganizador[]
 }
 
 model Solicitud {
@@ -121,7 +124,9 @@ model Solicitud {
   precio    Float
   mensaje   String?
   status    String   @default("PENDIENTE")
-  asistio   Boolean? // null=pendiente, true=asistió, false=no-show
+  asistio   Boolean?
+  canceladoA DateTime?
+  penalizado Boolean  @default(false)
   createdAt DateTime @default(now())
 
   @@unique([partidoId, jugadorId])
@@ -233,6 +238,21 @@ model Cancha {
   foto            String?
   descripcion     String?
   createdAt       DateTime @default(now())
+}
+
+model ResenaOrganizador {
+  id            String   @id @default(cuid())
+  organizadorId String
+  organizador   Usuario  @relation("orgResenasRecibidas", fields: [organizadorId], references: [id])
+  autorId       String
+  autor         Usuario  @relation("orgResenasEscritas", fields: [autorId], references: [id])
+  partidoId     String
+  partido       Partido  @relation(fields: [partidoId], references: [id])
+  rating        Int
+  comentario    String?
+  createdAt     DateTime @default(now())
+
+  @@unique([autorId, partidoId])
 }
 
 model Favorito {

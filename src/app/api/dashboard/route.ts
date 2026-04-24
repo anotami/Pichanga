@@ -12,10 +12,14 @@ export async function GET(request: Request) {
   if (!usuario) return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
 
   if (usuario.tipo === 'JUGADOR') {
-    const [solicitudes, transacciones, resenas] = await Promise.all([
+    const [solicitudes, transacciones, resenas, referidos] = await Promise.all([
       prisma.solicitud.findMany({
         where: { jugadorId: payload.userId },
-        include: { partido: true },
+        include: {
+          partido: {
+            include: { organizador: { select: { id: true, nombre: true } } }
+          }
+        },
         orderBy: { createdAt: 'desc' },
         take: 10
       }),
@@ -29,8 +33,23 @@ export async function GET(request: Request) {
         include: { autor: { select: { id: true, nombre: true } } },
         orderBy: { createdAt: 'desc' },
         take: 5
+      }),
+      prisma.usuario.findMany({
+        where: { referidoPorId: payload.userId },
+        select: { id: true, nombre: true, createdAt: true }
       })
     ])
+
+    // Batch check which partidos the player already rated the organizer for
+    const partidosConSolicitudAceptada = solicitudes
+      .filter(s => s.status === 'ACEPTADO' && new Date(s.partido.fecha) < new Date())
+      .map(s => s.partidoId)
+
+    const resenasOrg = await prisma.resenaOrganizador.findMany({
+      where: { autorId: payload.userId, partidoId: { in: partidosConSolicitudAceptada } },
+      select: { partidoId: true }
+    })
+    const yaCalificadoSet = new Set(resenasOrg.map(r => r.partidoId))
 
     const totalGanado = transacciones.filter(t => t.status === 'PAGADO').reduce((sum, t) => sum + t.neto, 0)
     const totalPendiente = transacciones.filter(t => t.status === 'PENDIENTE').reduce((sum, t) => sum + t.neto, 0)
@@ -39,9 +58,20 @@ export async function GET(request: Request) {
       data: {
         tipo: 'JUGADOR',
         perfil: usuario.perfil ? { ...usuario.perfil, disponibilidad: JSON.parse(usuario.perfil.disponibilidad) } : null,
-        solicitudes: solicitudes.map(s => ({ ...s, partido: { ...s.partido, posiciones: JSON.parse(s.partido.posiciones) } })),
+        solicitudes: solicitudes.map(s => ({
+          ...s,
+          partido: { ...s.partido, posiciones: JSON.parse(s.partido.posiciones) },
+          yaCalificado: yaCalificadoSet.has(s.partidoId),
+          puedeCalificar: s.status === 'ACEPTADO' && new Date(s.partido.fecha) < new Date() && !yaCalificadoSet.has(s.partidoId)
+        })),
         transacciones,
         resenas,
+        referidos: {
+          lista: referidos,
+          total: referidos.length,
+          puntos: referidos.length * 50,
+          codigoReferido: usuario.codigoReferido
+        },
         stats: { totalGanado, totalPendiente, totalPartidos: usuario.perfil?.totalPartidos ?? 0, rating: usuario.perfil?.rating ?? 0, puntos: usuario.perfil?.puntos ?? 0 }
       }
     })
