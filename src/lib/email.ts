@@ -41,6 +41,22 @@ export async function sendSolicitudRechazada(to: string, nombre: string, partido
   }).catch(() => {})
 }
 
+export async function sendPartidoCompletado(to: string, nombre: string, partidoTitulo: string, neto: number) {
+  const resend = getResend()
+  if (!resend) return
+  await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `💰 ¡Pago acreditado! — ${partidoTitulo}`,
+    html: `<p>Hola ${nombre},</p>
+<p>El partido <strong>${partidoTitulo}</strong> fue completado.</p>
+<p>Se acreditaron <strong>S/${neto.toFixed(2)}</strong> en tu billetera de Pichanga.</p>
+<p>Ingresá a tu <a href="https://pichanga.pe/wallet">billetera</a> para ver el detalle.</p>
+<p>¡Gracias por participar!</p>
+<p>— El equipo de Pichanga</p>`
+  }).catch(() => {})
+}
+
 export async function sendSolicitudCancelada(to: string, nombreOrg: string, jugadorNombre: string, partidoTitulo: string) {
   const resend = getResend()
   if (!resend) return

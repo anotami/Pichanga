@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken, getTokenFromRequest } from '@/lib/auth'
+import { sendPartidoCompletado } from '@/lib/email'
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const token = getTokenFromRequest(request)
@@ -47,6 +48,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
         link: '/wallet',
       },
     })
+    const jugador = await prisma.usuario.findUnique({ where: { id: tx.jugadorId }, select: { nombre: true, email: true } })
+    if (jugador) await sendPartidoCompletado(jugador.email, jugador.nombre, partido.titulo, tx.neto)
   }
 
   // Notify all accepted players about completion

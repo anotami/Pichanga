@@ -12,12 +12,15 @@ const STATUS_STYLE: Record<string, string> = {
   PENDIENTE: 'bg-amber-100 text-amber-700',
   ACEPTADO: 'bg-green-100 text-green-700',
   RECHAZADO: 'bg-red-100 text-red-600',
+  CANCELADO: 'bg-gray-100 text-gray-500',
 }
 
 export default function MisSolicitudesPage() {
   const [solicitudes, setSolicitudes] = useState<SolicitudFull[]>([])
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState('')
+  const [cancelConfirm, setCancelConfirm] = useState<string | null>(null)
+  const [cancelLoading, setCancelLoading] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -27,6 +30,21 @@ export default function MisSolicitudesPage() {
       .then(j => setSolicitudes(j.data ?? []))
       .finally(() => setLoading(false))
   }, [])
+
+  async function cancelarSolicitud(id: string) {
+    setCancelLoading(true)
+    const token = localStorage.getItem('token')
+    const res = await fetch(`/api/solicitudes/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status: 'CANCELADO' })
+    })
+    if (res.ok) {
+      setSolicitudes(prev => prev.map(s => s.id === id ? { ...s, status: 'CANCELADO' } : s))
+    }
+    setCancelConfirm(null)
+    setCancelLoading(false)
+  }
 
   const filtradas = filtro ? solicitudes.filter(s => s.status === filtro) : solicitudes
   const counts = {
@@ -38,6 +56,22 @@ export default function MisSolicitudesPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
+      {cancelConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">¿Cancelar participación?</h2>
+            <p className="text-sm text-gray-500 mb-2">Si el partido es en menos de 24 horas, perderás <strong>20 puntos</strong>.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setCancelConfirm(null)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium">Volver</button>
+              <button onClick={() => cancelarSolicitud(cancelConfirm)} disabled={cancelLoading}
+                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold disabled:opacity-50">
+                {cancelLoading ? 'Cancelando...' : 'Sí, cancelar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Mis solicitudes</h1>
         <p className="text-gray-500">Historial de todas tus postulaciones a partidos</p>
@@ -101,6 +135,12 @@ export default function MisSolicitudesPage() {
                       <p className="text-green-600 text-xs">Recibes {formatPrecio(neto)}</p>
                     )}
                     <p className="text-gray-400 text-xs mt-1">{new Date(s.createdAt).toLocaleDateString('es-PE')}</p>
+                    {s.status === 'ACEPTADO' && new Date(s.partido.fecha) > new Date() && (
+                      <button onClick={() => setCancelConfirm(s.id)}
+                        className="mt-2 text-xs text-red-400 hover:text-red-600 underline">
+                        Cancelar
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
