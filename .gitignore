@@ -8,11 +8,10 @@ node_modules/
 out/
 build/
 
-# Env files
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Env files — real env files stay local; only the placeholder example is tracked
+.env
+.env.*
+!.env.example
 
 # Database
 prisma/*.db
